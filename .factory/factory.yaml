@@ -1,0 +1,33 @@
+# yaml-language-server: $schema=./factory.schema.json
+# Factory configuration for this product. High-risk change (CODEOWNERS): needs the human.
+version: 1
+product: resume-sg
+repo: humyna-labs/resume-sg
+factory_repo: humyna-labs/factory
+base_branch: main
+max_impl_attempts: 3
+session_timeout_minutes: 45
+# Paths that always need human approval (spec 3.5 item 2). Keep in sync with .github/CODEOWNERS.
+high_risk_paths:
+  - package.json
+  - pnpm-lock.yaml
+  - public/_headers
+  - src/security/**
+  - src/privacy/**
+  - src/crypto/**
+  - src/templates/**
+  - workers/**
+  - ci/**
+  - .github/**
+  - .factory/**
+  - CODEOWNERS
+gates:
+  typecheck: pnpm typecheck
+  lint: pnpm lint
+  unit: pnpm test
+  e2e: pnpm e2e
+red_gate: unit
+deploy:
+  provider: cloudflare-pages
+  mode: git-integration
+  output_dir: dist

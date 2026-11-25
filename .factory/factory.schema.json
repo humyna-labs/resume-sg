@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "number",
+      "const": 1
+    },
+    "product": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$"
+    },
+    "repo": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9-]+\\/[A-Za-z0-9._-]+$"
+    },
+    "factory_repo": {
+      "default": "humyna-labs/factory",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9-]+\\/[A-Za-z0-9._-]+$"
+    },
+    "base_branch": {
+      "default": "main",
+      "type": "string"
+    },
+    "max_impl_attempts": {
+      "default": 3,
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10
+    },
+    "session_timeout_minutes": {
+      "default": 45,
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 240
+    },
+    "high_risk_paths": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "gates": {
+      "type": "object",
+      "properties": {
+        "typecheck": {
+          "type": "string"
+        },
+        "lint": {
+          "type": "string"
+        },
+        "unit": {
+          "type": "string"
+        },
+        "e2e": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "typecheck",
+        "lint",
+        "unit",
+        "e2e"
+      ],
+      "additionalProperties": false
+    },
+    "red_gate": {
+      "default": "unit",
+      "type": "string",
+      "enum": [
+        "unit",
+        "e2e"
+      ]
+    },
+    "deploy": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "type": "string",
+          "const": "cloudflare-pages"
+        },
+        "mode": {
+          "type": "string",
+          "const": "git-integration"
+        },
+        "output_dir": {
+          "default": "dist",
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider",
+        "mode"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "version",
+    "product",
+    "repo",
+    "high_risk_paths",
+    "gates",
+    "deploy"
+  ],
+  "additionalProperties": false
+}

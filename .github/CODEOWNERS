@@ -1,0 +1,13 @@
+# High-risk paths need the code owner's approval (spec 3.5 item 2, 3.6).
+# Keep in sync with high_risk_paths in .factory/factory.yaml (checked by the factory tests).
+/package.json        @humyna
+/pnpm-lock.yaml      @humyna
+/public/_headers     @humyna
+/src/security/       @humyna
+/src/privacy/        @humyna
+/src/crypto/         @humyna
+/src/templates/      @humyna
+/workers/            @humyna
+/ci/                 @humyna
+/.github/            @humyna
+/.factory/           @humyna

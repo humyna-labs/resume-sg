@@ -1,0 +1,10 @@
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+import { App } from "../../src/App.tsx";
+
+describe("App", () => {
+  it("shows the product name as the page heading", () => {
+    render(<App />);
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("resume-sg");
+  });
+});
