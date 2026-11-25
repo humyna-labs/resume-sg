@@ -1,0 +1,18 @@
+# Caller for the factory's reusable gates (R-18). Agents edit this file here, never under
+# .github/workflows/. The human installs it with: scripts/install-workflows.sh humyna-labs/resume-sg
+name: ci
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  gates:
+    uses: humyna-labs/factory/.github/workflows/gates.yml@v1
+    with:
+      factory-ref: v1
