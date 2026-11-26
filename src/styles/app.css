@@ -899,3 +899,8 @@ mark {
   gap: 12px;
   overflow-wrap: anywhere;
 }
+.preview-col {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}

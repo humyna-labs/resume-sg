@@ -6,6 +6,7 @@ import type { Dir } from "../../resume/edit.ts";
 import { emptyResume } from "../../resume/model.ts";
 import type { Resume } from "../../resume/model.ts";
 import { sampleResume } from "../../resume/sample.ts";
+import { PersonalInfoList } from "../personal-info/PersonalInfoList.tsx";
 import { Preview } from "./Preview.tsx";
 
 type T = (key: StrKey) => string;
@@ -277,7 +278,10 @@ export function ResumeEditor() {
           />
         </section>
       </div>
-      <Preview resume={r} />
+      <div className="preview-col">
+        <Preview resume={r} />
+        <PersonalInfoList resume={r} />
+      </div>
     </div>
   );
 }
