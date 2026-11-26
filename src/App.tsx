@@ -4,7 +4,11 @@ import { useRoute } from "./app/route.ts";
 import { LangContext, detectLang } from "./i18n/index.ts";
 import type { Lang } from "./i18n/index.ts";
 import { Home } from "./pages/Home.tsx";
+import { Contact } from "./pages/Contact.tsx";
+import { Faq } from "./pages/Faq.tsx";
+import { HowItWorks } from "./pages/HowItWorks.tsx";
 import { Placeholder } from "./pages/Placeholder.tsx";
+import { Privacy } from "./pages/Privacy.tsx";
 import "./styles/tokens.css";
 import "./styles/app.css";
 
@@ -24,16 +28,16 @@ export function App() {
       page = <Placeholder titleKey="page.app" />;
       break;
     case "how":
-      page = <Placeholder titleKey="page.how" />;
+      page = <HowItWorks />;
       break;
     case "faq":
-      page = <Placeholder titleKey="page.faq" />;
+      page = <Faq />;
       break;
     case "contact":
-      page = <Placeholder titleKey="page.contact" />;
+      page = <Contact />;
       break;
     case "privacy":
-      page = <Placeholder titleKey="page.privacy" />;
+      page = <Privacy />;
       break;
     default:
       page = <Home />;
