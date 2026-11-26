@@ -3,8 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../../src/App.tsx";
 import * as enMod from "../../src/i18n/en.ts";
 import * as zhMod from "../../src/i18n/zh.ts";
+import { leafValues, shape } from "./dict-helpers.ts";
 
-type Dict = Record<string, string>;
+type Dict = Record<string, unknown>;
 const pick = (m: Record<string, unknown>, name: string): Dict => (m.default ?? m[name]) as Dict;
 const en = pick(enMod, "en");
 const zh = pick(zhMod, "zh");
@@ -17,9 +18,11 @@ function setup(hash: string, lang = "en-US") {
   return render(<App />);
 }
 
-const nav = () => screen.getByRole("navigation");
+// The header (banner) holds the top navigation; the footer may hold its own nav landmark (design-spec v1, #19).
+const nav = () => screen.getAllByRole("banner")[0] as HTMLElement;
+const langButton = () => within(nav()).getByText(/^(中文|EN)$/).closest("button") as HTMLButtonElement;
 const main = () => screen.getByRole("main");
-const footer = () => screen.getByRole("contentinfo");
+const footer = () => screen.getAllByRole("contentinfo")[0] as HTMLElement;
 
 const LABELS = {
   en: ["Start", "How it works", "FAQ", "Contact"],
@@ -42,11 +45,13 @@ describe("navigation (criterion 1)", () => {
       it(`shows logo, four links and a switch on ${route} in ${lang}`, () => {
         setup(route, lang === "zh" ? "zh-CN" : "en-US");
         const n = within(nav());
-        expect(n.getByRole("link", { name: "JD2CV" }).getAttribute("href")).toBe("#/");
+        expect(n.getByRole("link", { name: /^JD2CV/ }).getAttribute("href")).toBe("#/");
         LABELS[lang].forEach((label, i) => {
-          expect(n.getByRole("link", { name: label }).getAttribute("href")).toBe(HREFS[i]);
+          // the links may also be rendered inside the phone menu sheet, so accept more than one match
+          const links = n.getAllByRole("link", { name: label });
+          expect(links.some((a) => a.getAttribute("href") === HREFS[i])).toBe(true);
         });
-        expect(n.getByRole("button")).toBeTruthy();
+        expect(langButton()).toBeTruthy();
       });
     }
   }
@@ -61,6 +66,7 @@ describe("footer (criterion 2)", () => {
       expect(f.getByText(/MIT licence/)).toBeTruthy();
       const links = Array.from(footer().querySelectorAll("a")).map((a) => a.getAttribute("href"));
       expect(links).toContain(REPO);
+      expect(f.getByRole("link", { name: "Contact" }).getAttribute("href")).toBe("#/contact");
     });
     it(`footer on ${route} in Chinese`, () => {
       setup(route, "zh-CN");
@@ -69,73 +75,50 @@ describe("footer (criterion 2)", () => {
       expect(f.getByText(/MIT 许可证/)).toBeTruthy();
       const links = Array.from(footer().querySelectorAll("a")).map((a) => a.getAttribute("href"));
       expect(links).toContain(REPO);
+      expect(f.getByRole("link", { name: "联系我们" }).getAttribute("href")).toBe("#/contact");
     });
   }
 });
 
+// The old Home copy (intro line, value points, steps list) was replaced by design-spec v1 (#19);
+// the new Home texts are asserted in tests/unit/design-home.test.tsx.
 describe("Home (criteria 3 and 4)", () => {
-  it("English text", () => {
+  it("English hero", () => {
     setup("#/");
-    const m = within(main());
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
-    expect(m.getByText("Free. No sign-up. We store nothing.")).toBeTruthy();
-    expect(m.getByText("Paste a job description and AI tailors your resume to it.")).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Your resume, aimed at this job.");
   });
-  it("Chinese text", () => {
+  it("Chinese hero", () => {
     setup("#/", "zh-CN");
-    const m = within(main());
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
-    expect(m.getByText("免费 · 无需注册 · 不存你的任何数据。")).toBeTruthy();
-    expect(m.getByText("粘贴职位描述，AI 帮你把简历改成这个岗位要的样子。")).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("简历，对准这个岗位。");
   });
   it("unknown hash shows Home", () => {
     setup("#/does-not-exist");
-    expect(within(main()).getByText("Free. No sign-up. We store nothing.")).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Your resume, aimed at this job.");
   });
-  const copy = {
-    en: {
-      cta: "Start tailoring",
-      values: ["Free", "No sign-up, we store nothing", "Never invents facts"],
-      steps: ["Paste your resume", "Paste the job description", "Check and export"],
-      tag: "en-US",
-    },
-    zh: {
-      cta: "开始定制",
-      values: ["免费", "无需注册，不存数据", "绝不编造事实"],
-      steps: ["粘贴你的简历", "粘贴职位描述", "核对并导出"],
-      tag: "zh-CN",
-    },
-  };
-  for (const lang of ["en", "zh"] as const) {
-    it(`CTA, value points and steps in ${lang}`, () => {
-      const c = copy[lang];
-      const { container } = setup("#/", c.tag);
-      const m = within(main());
-      expect(m.getByRole("link", { name: c.cta }).getAttribute("href")).toBe("#/app");
-      for (const v of c.values) expect(m.getByText(v)).toBeTruthy();
-      const ol = container.querySelector("main ol");
-      expect(ol).not.toBeNull();
-      const items = Array.from(ol?.querySelectorAll(":scope > li") ?? []).map((li) => li.textContent?.trim());
-      expect(items).toHaveLength(3);
-      c.steps.forEach((s, i) => expect(items[i]).toContain(s));
-    });
-  }
+  it("hero primary button goes to the app page", () => {
+    setup("#/");
+    const links = within(main()).getAllByRole("link", { name: "Start" });
+    expect(links.length).toBeGreaterThan(0);
+    for (const a of links) expect(a.getAttribute("href")).toBe("#/app");
+  });
 });
 
 describe("dictionaries (criteria 5 and 6)", () => {
-  it("have identical keys", () => {
-    expect(Object.keys(zh).sort()).toEqual(Object.keys(en).sort());
+  it("have identical keys and structure", () => {
+    expect(shape(zh)).toEqual(shape(en));
     expect(Object.keys(en).length).toBeGreaterThan(10);
   });
   it("have no empty values", () => {
-    for (const d of [en, zh]) for (const v of Object.values(d)) expect(String(v).trim()).not.toBe("");
+    for (const d of [en, zh]) for (const v of leafValues(d)) expect(v.trim()).not.toBe("");
   });
   it("never claim data never leaves the browser", () => {
     for (const d of [en, zh])
-      for (const v of Object.values(d)) expect(v).not.toMatch(/never leaves|不会离开/i);
+      for (const v of leafValues(d)) expect(v).not.toMatch(/never leaves|不会离开/i);
   });
   it("never mention Apple in visible text", () => {
-    for (const d of [en, zh]) for (const v of Object.values(d)) expect(v).not.toMatch(/apple/i);
+    for (const d of [en, zh]) for (const v of leafValues(d)) expect(v).not.toMatch(/apple/i);
     for (const route of ROUTES) {
       setup(route);
       expect(document.body.textContent ?? "").not.toMatch(/apple/i);
@@ -148,23 +131,23 @@ describe("language switch (criterion 7)", () => {
   it("defaults by navigator.language", () => {
     setup("#/", "zh-TW");
     expect(document.documentElement.lang).toBe("zh-CN");
-    expect(within(nav()).getByRole("link", { name: "工作原理" })).toBeTruthy();
+    expect(within(nav()).getAllByRole("link", { name: "工作原理" }).length).toBeGreaterThan(0);
     cleanup();
     setup("#/", "en-US");
     expect(document.documentElement.lang).toBe("en");
   });
   it("switches labels and lang both ways", () => {
     setup("#/", "en-US");
-    fireEvent.click(within(nav()).getByRole("button"));
-    for (const l of LABELS.zh) expect(within(nav()).getByRole("link", { name: l })).toBeTruthy();
+    fireEvent.click(langButton());
+    for (const l of LABELS.zh) expect(within(nav()).getAllByRole("link", { name: l }).length).toBeGreaterThan(0);
     expect(document.documentElement.lang).toBe("zh-CN");
-    fireEvent.click(within(nav()).getByRole("button"));
-    for (const l of LABELS.en) expect(within(nav()).getByRole("link", { name: l })).toBeTruthy();
+    fireEvent.click(langButton());
+    for (const l of LABELS.en) expect(within(nav()).getAllByRole("link", { name: l }).length).toBeGreaterThan(0);
     expect(document.documentElement.lang).toBe("en");
   });
   it("keeps language in memory only", () => {
     setup("#/", "en-US");
-    fireEvent.click(within(nav()).getByRole("button"));
+    fireEvent.click(langButton());
     expect(document.cookie).toBe("");
     expect(window.localStorage.length).toBe(0);
     expect(window.sessionStorage.length).toBe(0);

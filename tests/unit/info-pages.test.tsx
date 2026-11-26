@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../../src/App.tsx";
 import * as enMod from "../../src/i18n/en.ts";
 import * as zhMod from "../../src/i18n/zh.ts";
+import { leafValues, shape } from "./dict-helpers.ts";
 import { FAQ, STEPS } from "./info-pages-fixtures.ts";
 
 type Dict = Record<string, string>;
@@ -221,11 +222,11 @@ describe("criterion 6: Privacy", () => {
 
 describe("criterion 7: dictionaries", () => {
   it("never claim data never leaves the browser", () => {
-    for (const d of [en, zh]) for (const v of Object.values(d)) expect(v).not.toMatch(/never leaves|不会离开/i);
+    for (const d of [en, zh]) for (const v of leafValues(d)) expect(v).not.toMatch(/never leaves|不会离开/i);
   });
   it("same keys in en and zh, none empty", () => {
-    expect(Object.keys(zh).sort()).toEqual(Object.keys(en).sort());
-    for (const d of [en, zh]) for (const v of Object.values(d)) expect(String(v).trim()).not.toBe("");
+    expect(shape(zh)).toEqual(shape(en));
+    for (const d of [en, zh]) for (const v of leafValues(d)) expect(v.trim()).not.toBe("");
   });
   it("rendered info pages never claim it either", () => {
     for (const lang of ["en", "zh"] as const)
@@ -236,8 +237,8 @@ describe("criterion 7: dictionaries", () => {
       }
   });
   it("FAQ texts live in the dictionaries", () => {
-    const enAll = Object.values(en).map(norm).join("\n");
-    const zhAll = Object.values(zh).map(norm).join("\n");
+    const enAll = leafValues(en).map(norm).join("\n");
+    const zhAll = leafValues(zh).map(norm).join("\n");
     for (const qa of FAQ) {
       expect(enAll).toContain(norm(qa.enQ));
       expect(enAll).toContain(norm(qa.enA));
