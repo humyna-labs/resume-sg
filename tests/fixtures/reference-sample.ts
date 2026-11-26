@@ -62,6 +62,9 @@ export const REFERENCE: Record<"en" | "zh", Resume> = {
       { id: "skill-4", name: "Practices", items: ["DDD", "TDD", "observability"] },
     ],
     languages: ["English (professional)", "Mandarin (native)"],
+    projects: [],
+    extras: [],
+    order: ["summary", "experience", "projects", "education", "skills", "certificates", "extras", "languages"],
   },
   zh: {
     basics: {
@@ -123,5 +126,8 @@ export const REFERENCE: Record<"en" | "zh", Resume> = {
       { id: "skill-4", name: "工程实践", items: ["DDD", "TDD", "可观测性"] },
     ],
     languages: ["英语（工作语言）", "普通话（母语）"],
+    projects: [],
+    extras: [],
+    order: ["summary", "experience", "projects", "education", "skills", "certificates", "extras", "languages"],
   },
 };
