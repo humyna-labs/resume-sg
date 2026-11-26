@@ -246,10 +246,12 @@ describe("criterion 5: items", () => {
     const bad = factCheck(itemOriginal, itemOut({ skills: ["Kafka", "Spring Boots", "Rust"], tech: ["Go"] }), { outputLang: "zh" });
     expect(red(kind(bad, "item")).map((x) => x.value).sort()).toEqual(["Go", "Rust", "Spring Boots"]);
   });
-  it("cross language: a non-Latin item not found is amber item (普通话 for Mandarin)", () => {
-    const f = factCheck(itemOriginal, itemOut({ languages: ["英语", "普通话"] }), { outputLang: "zh" });
+  // Changed by resume-sg#38 (3): 普通话 and 英语 are in LANGUAGE_NAMES and now pass for Mandarin and English;
+  // the amber rule is tested with names that are not in the map.
+  it("cross language: a non-Latin item not in the language map and not found is amber item", () => {
+    const f = factCheck(itemOriginal, itemOut({ languages: ["英语", "普通话", "闽南语", "潮州话"] }), { outputLang: "zh" });
     expect(red(f)).toEqual([]);
-    expect(kind(amber(f), "item").map((x) => x.value).sort()).toEqual(["普通话", "英语"].sort());
+    expect(kind(amber(f), "item").map((x) => x.value).sort()).toEqual(["闽南语", "潮州话"].sort());
   });
 });
 
@@ -273,8 +275,10 @@ describe("criterion 6: coverage of name, email and phone lines", () => {
 // ---------------------------------------------------------------- criterion 7
 describe("criterion 7: faithful pairs and mutations", () => {
   const pairs = [
-    { label: "case 1 (en) -> zh", original: case1Original, make: case1ZhOutput, lang: "zh" as const, notFound: "法语", latinNew: "Spanish" },
-    { label: "case 2 (zh) -> en", original: case2Original, make: case2EnOutput, lang: "en" as const, notFound: "法语", latinNew: "French" },
+    // Changed by resume-sg#38: notFound is a name outside LANGUAGE_NAMES (法语 is mapped now and would be red);
+    // zh -> en: the company is no longer checked against the original (rule 1), so no finding is expected.
+    { label: "case 1 (en) -> zh", original: case1Original, make: case1ZhOutput, lang: "zh" as const, notFound: "闽南语", latinNew: "Spanish", company: [["red", "unsourced", "Zenith"]] },
+    { label: "case 2 (zh) -> en", original: case2Original, make: case2EnOutput, lang: "en" as const, notFound: "闽南语", latinNew: "French", company: [] },
   ];
 
   for (const p of pairs) {
@@ -315,9 +319,9 @@ describe("criterion 7: faithful pairs and mutations", () => {
         const f = added((o) => o.resume.languages.push(p.notFound));
         expect(f.map((x) => [x.level, x.kind, x.value])).toEqual([["amber", "item", p.notFound]]);
       });
-      it("an invented company gives exactly one red unsourced", () => {
+      it("an invented company: red unsourced for en -> zh, no finding for zh -> en (#38 rule 1)", () => {
         const f = added((o) => (o.resume.experience[0]!.company = "Zenith"));
-        expect(f.map((x) => [x.level, x.kind, x.value])).toEqual([["red", "unsourced", "Zenith"]]);
+        expect(f.map((x) => [x.level, x.kind, x.value])).toEqual(p.company);
       });
     });
   }
