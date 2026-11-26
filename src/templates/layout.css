@@ -1,0 +1,220 @@
+/* Shared by Classic and Modern: pages, levels (company > role > project), bullets, tags. No images, no fonts. */
+.tpl {
+  box-sizing: border-box;
+  width: 794px;
+  color: var(--text);
+  font-family: var(--font-stack);
+  text-align: left;
+  text-transform: none;
+  letter-spacing: normal;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.tpl * {
+  box-sizing: border-box;
+}
+.tpl .pg {
+  position: relative;
+  width: 794px;
+  min-height: 1123px;
+  background: #fff;
+  box-shadow: 0 0 0 1px #e5e5ea;
+}
+.tpl .pg + .pg {
+  margin-top: 24px;
+}
+.tpl .pg-foot {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 22px;
+  text-align: center;
+  font-size: 10.5px;
+  line-height: 1.4;
+  color: #a1a1a6;
+}
+.tpl .flow {
+  overflow-wrap: anywhere;
+}
+.tpl .flow ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.tpl .flow p {
+  margin: 0;
+}
+.tpl .flow .u-h {
+  padding: 18px 0 8px;
+}
+.tpl .flow .sec-h {
+  margin: 0;
+  break-after: avoid;
+}
+
+/* a company group stays whole when the browser has to break it (pages are already filled by Paged) */
+.tpl .flow [data-group] {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+/* bullets */
+.tpl .flow .bul {
+  position: relative;
+  padding: 2px 0 0 14px;
+}
+.tpl .flow .bul::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: calc(0.62em + 2px);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.55;
+}
+
+/* rows: the left part wraps, the dates column never does */
+.tpl .flow .row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+.tpl .flow .ld {
+  flex: 1;
+  min-width: 0;
+}
+.tpl .flow .date {
+  flex: none;
+  white-space: nowrap;
+  color: var(--muted);
+}
+.tpl .flow .gap {
+  padding-top: 9px;
+}
+.tpl .flow .gap2 {
+  padding-top: 6px;
+}
+
+/* hierarchy: company > role > project */
+.tpl .flow .co-l .co {
+  font-size: 14.6px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--text);
+}
+.tpl .flow .loc {
+  margin-left: 10px;
+  font-size: 12px;
+  color: #8e8e93;
+}
+.tpl .flow .co-l .date {
+  font-weight: 600;
+  color: var(--text-2);
+}
+.tpl .flow .rl {
+  padding-top: 4px;
+}
+.tpl .flow .rl .role {
+  font-size: 13.2px;
+  font-weight: 600;
+}
+.tpl .flow .rl .date {
+  font-size: 11.8px;
+}
+.tpl .flow .pl {
+  padding-top: 5px;
+}
+.tpl .flow .ptag {
+  display: inline-block;
+  margin-right: 7px;
+  padding: 0 6px;
+  border-radius: 4px;
+  font-size: 10.5px;
+  line-height: 16px;
+  font-weight: 600;
+  vertical-align: 1px;
+}
+.tpl .flow .ptitle {
+  font-size: 12.8px;
+  font-weight: 600;
+}
+.tpl .flow .pl .date {
+  font-size: 11.5px;
+}
+.tpl .flow [data-nest] {
+  margin-left: 14px;
+  padding-left: 12px;
+  border-left: 2px solid #e3e3e8;
+}
+.tpl .flow .pj .pname {
+  font-size: 14px;
+  font-weight: 700;
+}
+.tpl .flow .pmeta {
+  margin-left: 10px;
+  font-size: 12.3px;
+  color: var(--muted);
+}
+.tpl .flow .tech {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 0 2px;
+  color: #515154;
+}
+.tpl .flow .tl {
+  margin-right: 2px;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.tpl .flow .tk {
+  padding: 0 6px;
+  border-radius: 4px;
+  font-size: 11.3px;
+  line-height: 17px;
+}
+.tpl .flow .school {
+  font-size: 14px;
+  font-weight: 700;
+}
+.tpl .flow .deg {
+  margin-left: 10px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.tpl .flow .det {
+  display: block;
+  padding-bottom: 3px;
+}
+
+/* the first block of a page has no gap above it */
+.tpl .flow .u.u-first {
+  padding-top: 0;
+}
+.tpl .flow .bul.u-first::before {
+  top: 0.62em;
+}
+
+@media print {
+  .tpl,
+  .tpl .pg {
+    width: 210mm;
+  }
+  .tpl .pg {
+    min-height: 297mm;
+    box-shadow: none;
+    break-after: page;
+    page-break-after: always;
+  }
+  .tpl .pg + .pg {
+    margin-top: 0;
+  }
+  .tpl .pg:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+}

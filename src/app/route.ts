@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-export type Route = "home" | "app" | "how" | "faq" | "contact" | "privacy" | "disclaimer" | "templates";
+export type Route = "home" | "app" | "how" | "faq" | "contact" | "privacy" | "disclaimer" | "templates" | "sections";
 
 const MAP: Record<string, Route> = {
   "#/": "home",
@@ -11,6 +11,7 @@ const MAP: Record<string, Route> = {
   "#/privacy": "privacy",
   "#/disclaimer": "disclaimer",
   "#/templates": "templates",
+  "#/sections": "sections",
 };
 
 export function parseRoute(hash: string): Route {

@@ -75,6 +75,8 @@ function StringList({
   onUpdate,
   onMove,
   onRemove,
+  numbered = true,
+  addLabel,
 }: {
   t: T;
   idPrefix: string;
@@ -85,6 +87,10 @@ function StringList({
   onUpdate: (i: number, v: string) => void;
   onMove: (i: number, d: Dir) => void;
   onRemove: (i: number) => void;
+  /** Labels read "Item 1", "Item 2"; false keeps the plain label. */
+  numbered?: boolean;
+  /** Accessible name of the add button when several lists share one add label. */
+  addLabel?: string | undefined;
 }) {
   return (
     <div className="list">
@@ -93,14 +99,14 @@ function StringList({
         return (
           <div className="list-row" key={i}>
             <div className="field">
-              <label htmlFor={id}>{`${t(labelKey)} ${i + 1}`}</label>
+              <label htmlFor={id}>{numbered ? `${t(labelKey)} ${i + 1}` : t(labelKey)}</label>
               <input id={id} className="input" type="text" value={v} onChange={(e) => onUpdate(i, e.target.value)} />
             </div>
             <Controls t={t} name={v || `${t("ed.entry")} ${i + 1}`} onMove={(d) => onMove(i, d)} onRemove={() => onRemove(i)} />
           </div>
         );
       })}
-      <button type="button" className="btn btn-sm btn-ghost add" onClick={onAdd}>
+      <button type="button" className="btn btn-sm btn-ghost add" aria-label={addLabel} onClick={onAdd}>
         {t(addKey)}
       </button>
     </div>
@@ -193,6 +199,67 @@ export function ResumeEditor() {
         </section>
 
         <section className="card">
+          <h2>{t("ed.projects")}</h2>
+          {r.projects.map((p, n) => {
+            const name = p.name || `${t("ed.entry")} ${n + 1}`;
+            return (
+              <div className="entry" key={p.id}>
+                <Controls t={t} name={name} onMove={(d) => apply((x) => ed.moveProject(x, p.id, d))} onRemove={() => apply((x) => ed.removeProject(x, p.id))} />
+                <div className="cols">
+                  <Field id={`${p.id}-name`} label={t("ed.projectName")} value={p.name} onChange={(v) => apply((x) => ed.updateProject(x, p.id, { name: v }))} />
+                  <Field id={`${p.id}-role`} label={t("ed.projectRole")} value={p.role} onChange={(v) => apply((x) => ed.updateProject(x, p.id, { role: v }))} />
+                  <Field id={`${p.id}-org`} label={t("ed.organisation")} value={p.org} onChange={(v) => apply((x) => ed.updateProject(x, p.id, { org: v }))} />
+                  <div className="field">
+                    <label htmlFor={`${p.id}-under`}>{t("ed.underRole")}</label>
+                    <select
+                      id={`${p.id}-under`}
+                      className="input"
+                      value={p.experienceId ?? ""}
+                      onChange={(e) => apply((x) => ed.updateProject(x, p.id, { experienceId: e.target.value === "" ? undefined : e.target.value }))}
+                    >
+                      <option value="">{t("ed.noRole")}</option>
+                      {r.experience.map((e, i) => (
+                        <option key={e.id} value={e.id}>
+                          {[e.title, e.company].filter((s) => s !== "").join(" · ") || `${t("ed.entry")} ${i + 1}`}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <Field id={`${p.id}-start`} label={t("ed.start")} placeholder="2021-03" value={p.start} onChange={(v) => apply((x) => ed.updateProject(x, p.id, { start: v }))} />
+                  <Field id={`${p.id}-end`} label={t("ed.end")} placeholder="2023-08" value={p.end} onChange={(v) => apply((x) => ed.updateProject(x, p.id, { end: v }))} />
+                </div>
+                <StringList
+                  t={t}
+                  idPrefix={`${p.id}-tech`}
+                  labelKey="ed.techItem"
+                  addKey="ed.addTech"
+                  numbered={false}
+                  items={p.tech}
+                  onAdd={() => apply((x) => ed.addProjectTech(x, p.id))}
+                  onUpdate={(i, v) => apply((x) => ed.updateProjectTech(x, p.id, i, v))}
+                  onMove={(i, d) => apply((x) => ed.moveProjectTech(x, p.id, i, d))}
+                  onRemove={(i) => apply((x) => ed.removeProjectTech(x, p.id, i))}
+                />
+                <StringList
+                  t={t}
+                  idPrefix={`${p.id}-bullet`}
+                  labelKey="ed.bullet"
+                  addKey="ed.addBullet"
+                  items={p.bullets}
+                  onAdd={() => apply((x) => ed.addProjectBullet(x, p.id))}
+                  onUpdate={(i, v) => apply((x) => ed.updateProjectBullet(x, p.id, i, v))}
+                  onMove={(i, d) => apply((x) => ed.moveProjectBullet(x, p.id, i, d))}
+                  onRemove={(i) => apply((x) => ed.removeProjectBullet(x, p.id, i))}
+                />
+              </div>
+            );
+          })}
+          <button type="button" className="btn btn-sm btn-ghost add" onClick={() => apply(ed.addProject)}>
+            {t("ed.addProject")}
+          </button>
+        </section>
+
+        <section className="card">
           <h2>{t("ed.education")}</h2>
           {r.education.map((e, n) => {
             const name = [e.school, e.degree].filter((s) => s !== "").join(", ") || `${t("ed.entry")} ${n + 1}`;
@@ -261,6 +328,32 @@ export function ResumeEditor() {
             onMove={(i, d) => apply((x) => ed.moveCertificate(x, i, d))}
             onRemove={(i) => apply((x) => ed.removeCertificate(x, i))}
           />
+        </section>
+
+        <section className="card">
+          <h2>{t("ed.extras")}</h2>
+          {r.extras.map((x0, n) => (
+            <div className="entry" key={x0.id}>
+              <Controls t={t} name={x0.heading || `${t("ed.entry")} ${n + 1}`} onMove={(d) => apply((x) => ed.moveExtra(x, x0.id, d))} onRemove={() => apply((x) => ed.removeExtra(x, x0.id))} />
+              <Field id={`${x0.id}-heading`} label={t("ed.sectionHeading")} value={x0.heading} onChange={(v) => apply((x) => ed.updateExtra(x, x0.id, { heading: v }))} />
+              <StringList
+                t={t}
+                idPrefix={`${x0.id}-item`}
+                labelKey="ed.extraItem"
+                addKey="ed.addExtraItem"
+                numbered={false}
+                addLabel={n === 0 ? undefined : `${t("ed.addExtraItem")}: ${x0.heading || `${t("ed.entry")} ${n + 1}`}`}
+                items={x0.items}
+                onAdd={() => apply((x) => ed.addExtraItem(x, x0.id))}
+                onUpdate={(i, v) => apply((x) => ed.updateExtraItem(x, x0.id, i, v))}
+                onMove={(i, d) => apply((x) => ed.moveExtraItem(x, x0.id, i, d))}
+                onRemove={(i) => apply((x) => ed.removeExtraItem(x, x0.id, i))}
+              />
+            </div>
+          ))}
+          <button type="button" className="btn btn-sm btn-ghost add" onClick={() => apply(ed.addExtra)}>
+            {t("ed.addExtra")}
+          </button>
         </section>
 
         <section className="card">
