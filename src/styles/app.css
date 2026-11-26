@@ -901,3 +901,438 @@ mark {
     max-height: none;
   }
 }
+
+/* tailor flow */
+.btn-secondary {
+  background: var(--alt);
+  color: var(--text);
+  border: 1px solid var(--line);
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.fgrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.fgrid.res {
+  grid-template-columns: minmax(0, 4fr) minmax(0, 7fr);
+}
+.fcol {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  align-content: start;
+}
+.fcard {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.fcard h2,
+.fcard h3 {
+  margin: 0;
+}
+.fstep {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 17px;
+  font-weight: 700;
+}
+.fstep label {
+  margin: 0;
+  font-size: 17px;
+}
+.fnum {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+}
+.ftext {
+  min-height: 120px;
+  line-height: 1.5;
+}
+.fmeta,
+.fsmall {
+  font-size: 13.5px;
+  color: var(--muted);
+  margin: 0;
+}
+.fcenter {
+  text-align: center;
+}
+.ftpls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.ftpl {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  font: inherit;
+  text-align: left;
+  color: var(--text);
+  background: var(--bg);
+  border: 2px solid var(--line);
+  border-radius: var(--r-md);
+  cursor: pointer;
+}
+.ftpl.sel {
+  border-color: var(--accent);
+  background: var(--accent-weak);
+}
+.fthumb {
+  display: grid;
+  gap: 5px;
+  height: 78px;
+  padding: 8px;
+  align-content: start;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.fthumb i {
+  display: block;
+  height: 5px;
+  background: var(--input-line);
+  border-radius: 2px;
+}
+.fthumb i.t,
+.fthumb i.band {
+  background: var(--text-2);
+  width: 50%;
+}
+.fthumb.m i.band {
+  width: 100%;
+  background: var(--accent);
+}
+.flb {
+  font-weight: 600;
+}
+.ftag {
+  font-size: 12px;
+  color: var(--accent);
+  font-weight: 600;
+}
+.frow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.frow.end {
+  justify-content: flex-end;
+}
+.flbl {
+  min-width: 72px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.fseg {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 3px;
+  background: var(--alt);
+  border-radius: var(--r-pill);
+}
+.fseg button {
+  height: 30px;
+  padding: 0 14px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--text-2);
+  background: transparent;
+  border: 0;
+  border-radius: var(--r-pill);
+  cursor: pointer;
+}
+.fseg button.on {
+  background: var(--bg);
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: var(--shadow);
+}
+.fkeybox {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--alt);
+  border-radius: var(--r-md);
+}
+.fok {
+  color: var(--ok);
+  font-weight: 600;
+}
+.fgo {
+  width: 100%;
+  margin-top: 0;
+}
+.fhints {
+  display: grid;
+  gap: 4px;
+}
+.fhints:empty {
+  display: none;
+}
+.fwait-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.fwait h2 {
+  font-size: 19px;
+}
+.fspin {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border: 4px solid var(--accent-weak);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: fspin 1s linear infinite;
+}
+@keyframes fspin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fspin {
+    animation-duration: 3s;
+  }
+}
+.fsteps {
+  list-style: none;
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+}
+.fsteps li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.fsteps li[data-state="todo"] {
+  color: var(--muted);
+}
+.fdot {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--input-line);
+  font-size: 12px;
+  color: #fff;
+}
+.fdot.done {
+  background: var(--ok);
+  border-color: var(--ok);
+}
+.fdot.now {
+  border-color: var(--accent);
+}
+.fnote {
+  margin: 0;
+  padding: 10px 12px;
+  font-size: 13.5px;
+  background: var(--alt);
+  border-radius: var(--r-md);
+}
+.fmodal {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.4);
+}
+.fdialog {
+  display: grid;
+  gap: 16px;
+  width: min(440px, 100%);
+  padding: 22px 24px;
+  background: var(--bg);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow);
+}
+.fdialog p {
+  margin: 0;
+}
+.ftabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  border-bottom: 1px solid var(--line);
+}
+.ftabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+}
+.ftabs button.on {
+  color: var(--text);
+  font-weight: 600;
+  border-bottom-color: var(--accent);
+}
+.fcnt {
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: var(--r-pill);
+}
+.fcnt.g {
+  background: var(--ok-weak);
+  color: var(--ok);
+}
+.fcnt.r {
+  background: var(--warn-weak);
+  color: var(--warn);
+}
+.ffind {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  margin-top: 10px;
+}
+.ffind.red {
+  background: var(--warn-weak);
+}
+.ffind.amber {
+  background: var(--mark);
+}
+.ffind.done {
+  background: var(--alt);
+}
+.ffind mark {
+  background: transparent;
+  font-weight: 700;
+}
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+.fstatus {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ok);
+}
+.fpassed {
+  margin: 10px 0 0;
+  padding: 10px 14px;
+  color: var(--ok);
+  font-weight: 600;
+  background: var(--ok-weak);
+  border-radius: var(--r-md);
+}
+.fsub {
+  margin-top: 14px;
+  font-size: 16px;
+}
+.flist {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding-left: 20px;
+  list-style: disc;
+}
+.forig {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.forig ul {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.forig li {
+  display: grid;
+  gap: 2px;
+}
+.forig-new {
+  font-weight: 600;
+}
+.forig-src {
+  font-size: 13.5px;
+  color: var(--muted);
+  white-space: pre-wrap;
+}
+.ftoolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.fpages {
+  flex: 1;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+.fpreview {
+  position: relative;
+  display: grid;
+  gap: 8px;
+}
+.fai {
+  justify-self: start;
+  padding: 2px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--warn);
+  background: var(--warn-weak);
+  border-radius: var(--r-pill);
+}
+.fedit {
+  display: grid;
+  gap: 16px;
+  justify-items: start;
+}
+.fedit > .editor-grid {
+  width: 100%;
+}
+@media (max-width: 760px) {
+  .fgrid,
+  .fgrid.res {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .fseg {
+    max-width: 100%;
+  }
+}
