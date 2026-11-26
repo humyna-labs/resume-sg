@@ -496,6 +496,74 @@ mark {
   list-style: disc;
   padding-left: 20px;
 }
+.faq-item {
+  scroll-margin-top: calc(var(--nav-h) + 16px);
+}
+.ai-settings {
+  display: grid;
+  gap: 18px;
+}
+.ai-settings .field-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.ai-settings .field-row .input {
+  flex: 1;
+  min-width: 0;
+}
+.ai-settings .field-hint,
+.ai-settings .callout {
+  font-size: 13.5px;
+  margin-top: 8px;
+}
+.ai-settings .field-error {
+  font-size: 13.5px;
+  color: var(--warn);
+  margin-top: 6px;
+}
+.ai-settings .check label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 0;
+  font-weight: 500;
+}
+.ai-settings .help-toggle {
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 600;
+  padding: 4px 0;
+  cursor: pointer;
+}
+.ai-settings .key-steps {
+  list-style: decimal;
+  padding-left: 22px;
+  margin-top: 8px;
+  display: grid;
+  gap: 8px;
+}
+.ai-settings .key-steps a,
+.ai-settings .protect-link {
+  color: var(--accent);
+  text-decoration: underline;
+}
+.ai-settings .test-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.ai-settings .btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.ai-settings .test-result {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 .how-steps {
   display: grid;
   gap: 14px;

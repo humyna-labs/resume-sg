@@ -12,6 +12,7 @@ const MAP: Record<string, Route> = {
 };
 
 export function parseRoute(hash: string): Route {
+  if (hash.startsWith("#/faq/")) return "faq";
   return MAP[hash] ?? "home";
 }
 
