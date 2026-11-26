@@ -152,8 +152,11 @@ test.describe("templates e2e", () => {
           while (n && !n.contains(b)) n = n.parentElement;
           return n!;
         };
-        const leaf = (t: string) =>
-          Array.from(rootEl.querySelectorAll("*")).filter((e) => e.children.length === 0 && (e.textContent ?? "").includes(t))[0]!;
+        // exact text first, so "Software Engineer" is not found inside "Senior Software Engineer"; substring as fallback
+        const leaf = (t: string) => {
+          const all = Array.from(rootEl.querySelectorAll("*")).filter((e) => e.children.length === 0);
+          return all.find((e) => (e.textContent ?? "").trim() === t) ?? all.find((e) => (e.textContent ?? "").includes(t))!;
+        };
         const avoid = (e: Element) => ["avoid", "avoid-page"].includes(getComputedStyle(e).getPropertyValue("break-inside"));
         const wrappers = [
           ["Lead Backend Engineer", "Led the redesign"],
