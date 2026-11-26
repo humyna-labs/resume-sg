@@ -25,6 +25,13 @@ export function Privacy() {
           {t("privacy.4.after")}
         </p>
       </div>
+      <div className="card">
+        <p>
+          {t("privacy.5.before")}
+          <a href="#/disclaimer">{t("dis.link")}</a>
+          {t("privacy.5.after")}
+        </p>
+      </div>
     </PageShell>
   );
 }

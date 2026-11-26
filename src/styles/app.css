@@ -877,3 +877,25 @@ mark {
     max-height: none;
   }
 }
+
+/* disclaimer */
+.consent-line,
+.footer-agree {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.consent-line {
+  margin-top: 8px;
+}
+.consent-line a,
+.footer-agree a {
+  text-decoration: underline;
+}
+.disclaimer-list {
+  margin: 12px 0 0;
+  padding-left: 1.4em;
+  display: grid;
+  gap: 12px;
+  overflow-wrap: anywhere;
+}

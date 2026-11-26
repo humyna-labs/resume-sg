@@ -8,6 +8,7 @@ import { Contact } from "./pages/Contact.tsx";
 import { Faq } from "./pages/Faq.tsx";
 import { HowItWorks } from "./pages/HowItWorks.tsx";
 import { AppPage } from "./pages/AppPage.tsx";
+import { Disclaimer } from "./pages/Disclaimer.tsx";
 import { Privacy } from "./pages/Privacy.tsx";
 import "./styles/tokens.css";
 import "./styles/app.css";
@@ -38,6 +39,9 @@ export function App() {
       break;
     case "privacy":
       page = <Privacy />;
+      break;
+    case "disclaimer":
+      page = <Disclaimer />;
       break;
     default:
       page = <Home />;
