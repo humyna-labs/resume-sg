@@ -43,7 +43,7 @@ function Thumb({ id }: { id: TemplateId }) {
     </span>
   ) : (
     <span className="fthumb m" aria-hidden="true">
-      <i className="band" />
+      <i className="fband" />
       <i style={{ width: "88%" }} />
       <i style={{ width: "76%" }} />
       <i style={{ width: "82%" }} />

@@ -1010,11 +1010,11 @@ mark {
   border-radius: 2px;
 }
 .fthumb i.t,
-.fthumb i.band {
+.fthumb i.fband {
   background: var(--text-2);
   width: 50%;
 }
-.fthumb.m i.band {
+.fthumb.m i.fband {
   width: 100%;
   background: var(--accent);
 }
