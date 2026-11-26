@@ -195,7 +195,9 @@ describe("criterion 4: basics", () => {
     expect(kind(f, "basics")).toEqual([]);
   });
   it("cross language (zh original, en output): a Latin name not found is amber", () => {
-    const o = "王小雨\nxiaoyu.wang@example.com\n+65 9000 0001";
+    // Han must be >= 30% of letters even though the email adds ~20 Latin letters.
+    const o = "王小雨\nxiaoyu.wang@example.com\n+65 9000 0001\n后端开发工程师，负责订单系统设计与开发，具有五年工作经验";
+    expect(detectLang(o)).toBe("zh");
     const f = factCheck(o, basicsOut({ name: "Wang Xiaoyu", email: "xiaoyu.wang@example.com", phone: "+65 9000 0001", links: [] }), {
       outputLang: "en",
     });
