@@ -54,6 +54,10 @@ ol {
   backdrop-filter: saturate(180%) blur(20px);
   border-bottom: 1px solid var(--line);
 }
+/* a page that shows resume pages scrolls the header away, so it never covers a page (screenshots, review) */
+.shell:has([data-template]) .nav {
+  position: static;
+}
 .nav-bar {
   height: var(--nav-h);
   display: flex;
