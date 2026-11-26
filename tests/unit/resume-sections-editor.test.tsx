@@ -5,17 +5,15 @@
 //   "Move up: <name>" / "Move down: <name>" / "Remove: <name>" for projects (name) and extras (heading);
 //   fields "Project name", "Project role", "Organisation", "Under role" (a <select>: first option = none, then one per
 //   experience entry, value = the experience id), "Tech item", "Section heading", "Extra item".
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { App } from "../../src/App.tsx";
+import { openEditor } from "./flow-helpers.tsx";
 import zhDict from "../../src/i18n/zh.ts";
 import { leafValues } from "./dict-helpers.ts";
 
 const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-function setup() {
-  vi.spyOn(window.navigator, "language", "get").mockReturnValue("en-US");
-  window.location.hash = "#/app";
-  return render(<App />);
+async function setup() {
+  await openEditor("en");
 }
 const editor = () => screen.getByTestId("resume-editor");
 const preview = () => screen.getByTestId("resume-preview");
@@ -38,8 +36,8 @@ afterEach(() => {
 });
 
 describe("criterion 1: projects in the editor", () => {
-  it("add, edit, reorder and remove projects", () => {
-    setup();
+  it("add, edit, reorder and remove projects", async () => {
+    await setup();
     click(/^add project$/i);
     click(/^add project$/i);
     expect(fields(/^project name$/i)).toHaveLength(2);
@@ -57,8 +55,8 @@ describe("criterion 1: projects in the editor", () => {
     expect(vals(/^project name$/i)).toEqual(["Beta"]);
   });
 
-  it("project bullets and tech items: add, edit, remove", () => {
-    setup();
+  it("project bullets and tech items: add, edit, remove", async () => {
+    await setup();
     click(/^add project$/i);
     type(fields(/^project name$/i)[0]!, "Alpha");
     click(/^add bullet/i);
@@ -73,8 +71,8 @@ describe("criterion 1: projects in the editor", () => {
     expect(fields(/^tech item$/i)).toHaveLength(0);
   });
 
-  it("'Under role' offers none plus every experience entry and moves the project into the role in the preview", () => {
-    setup();
+  it("'Under role' offers none plus every experience entry and moves the project into the role in the preview", async () => {
+    await setup();
     loadExample();
     click(/^add project$/i);
     type(fields(/^project name$/i)[0]!, "Dashboard rebuild");
@@ -96,8 +94,8 @@ describe("criterion 1: projects in the editor", () => {
     expect(preview().querySelector("[data-nest]")).toBeNull();
   });
 
-  it("projects show in the preview under a Projects heading", () => {
-    setup();
+  it("projects show in the preview under a Projects heading", async () => {
+    await setup();
     click(/^add project$/i);
     type(fields(/^project name$/i)[0]!, "Alpha");
     const heads = within(preview()).getAllByRole("heading", { level: 2 }).map((h) => h.textContent?.trim());
@@ -106,8 +104,8 @@ describe("criterion 1: projects in the editor", () => {
 });
 
 describe("criterion 1: extras and education details in the editor", () => {
-  it("add, edit, reorder and remove extras and their items", () => {
-    setup();
+  it("add, edit, reorder and remove extras and their items", async () => {
+    await setup();
     click(/^add extra section$/i);
     click(/^add extra section$/i);
     expect(fields(/^section heading$/i)).toHaveLength(2);
@@ -125,8 +123,8 @@ describe("criterion 1: extras and education details in the editor", () => {
     expect(vals(/^section heading$/i)).toEqual(["Awards"]);
   });
 
-  it("education details can be added, edited and removed (and show in the preview)", () => {
-    setup();
+  it("education details can be added, edited and removed (and show in the preview)", async () => {
+    await setup();
     loadExample();
     const n = fields(/detail/i).length;
     fireEvent.click(within(editor()).getAllByRole("button", { name: /^add detail/i })[0]!);
@@ -136,8 +134,8 @@ describe("criterion 1: extras and education details in the editor", () => {
     expect(fields(/detail/i)).toHaveLength(n);
   });
 
-  it("every input in the editor still has a visible label with projects and extras present", () => {
-    setup();
+  it("every input in the editor still has a visible label with projects and extras present", async () => {
+    await setup();
     loadExample();
     click(/^add project$/i);
     click(/^add extra section$/i);
@@ -150,7 +148,7 @@ describe("criterion 1: extras and education details in the editor", () => {
     }
   });
 
-  it("the Chinese dictionary has the new labels", () => {
+  it("the Chinese dictionary has the new labels", async () => {
     const zh = leafValues(zhDict as unknown as Record<string, unknown>);
     expect(zh.some((v) => /项目/.test(v))).toBe(true);
     expect(zh.some((v) => /^(添加|新增).*项目/.test(v.trim()))).toBe(true);

@@ -5,9 +5,9 @@
 // "Add bullet", "Add detail", "Add item", "Add link", "Add certificate", "Add language",
 // "Move up: <text>", "Move down: <text>", "Remove: <text>" where <text> is the entry's title / school /
 // group name / the string itself.
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { App } from "../../src/App.tsx";
+import { openEditor } from "./flow-helpers.tsx";
 import en from "../../src/i18n/en.ts";
 import zh from "../../src/i18n/zh.ts";
 import { formatRange } from "../../src/resume/dates.ts";
@@ -18,10 +18,8 @@ const S = sampleResume();
 const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const CJK = /[一-鿿]/;
 
-function setup() {
-  vi.spyOn(window.navigator, "language", "get").mockReturnValue("en-US");
-  window.location.hash = "#/app";
-  return render(<App />);
+async function setup() {
+  await openEditor("en");
 }
 const editor = () => screen.getByTestId("resume-editor");
 const preview = () => screen.getByTestId("resume-preview");
@@ -48,16 +46,16 @@ afterEach(() => {
 });
 
 describe("criterion 4: labelled fields for every model field (en)", () => {
-  it("empty editor shows basics, summary and the add buttons", () => {
-    setup();
+  it("empty editor shows basics, summary and the add buttons", async () => {
+    await setup();
     for (const l of [/^name$/i, /^headline$/i, /^email$/i, /^phone$/i, /^location$/i, /^summary$/i])
       expect(fields(l), String(l)).toHaveLength(1);
     for (const b of [/^add experience$/i, /^add education$/i, /^add skill group$/i, /^add link$/i, /^add certificate$/i, /^add language$/i, /^load example$/i, /^clear$/i])
       expect(btn(b)).toBeTruthy();
   });
 
-  it("with the example loaded every model field has a labelled input", () => {
-    setup();
+  it("with the example loaded every model field has a labelled input", async () => {
+    await setup();
     loadExample();
     const n = (l: RegExp) => fields(l).length;
     expect(n(/^company$/i)).toBe(2);
@@ -82,8 +80,8 @@ describe("criterion 4: labelled fields for every model field (en)", () => {
   const allControls = () =>
     Array.from(editor().querySelectorAll<HTMLInputElement>("input, textarea, select")).filter((e) => e.type !== "hidden");
 
-  it("every input has a visible label (en)", () => {
-    setup();
+  it("every input has a visible label (en)", async () => {
+    await setup();
     loadExample();
     const list = allControls();
     expect(list.length).toBeGreaterThan(20);
@@ -93,8 +91,8 @@ describe("criterion 4: labelled fields for every model field (en)", () => {
     }
   });
 
-  it("every input has a visible label in Chinese, different from English", () => {
-    setup();
+  it("every input has a visible label in Chinese, different from English", async () => {
+    await setup();
     loadExample();
     const enLabels = allControls().map((el) => Array.from(el.labels ?? []).map((l) => l.textContent?.trim()).join(""));
     switchLang();
@@ -110,8 +108,8 @@ describe("criterion 4: labelled fields for every model field (en)", () => {
 });
 
 describe("criterion 5: add, edit, reorder, remove (en)", () => {
-  it("experience: add, edit, move, remove", () => {
-    setup();
+  it("experience: add, edit, move, remove", async () => {
+    await setup();
     loadExample();
     const [t1, t2] = S.experience.map((e) => e.title);
     click(/^add experience$/i);
@@ -126,8 +124,8 @@ describe("criterion 5: add, edit, reorder, remove (en)", () => {
     expect(vals(/^company$/i)).toEqual([S.experience[1]!.company, "New Co"]);
   });
 
-  it("bullets: add, edit, move, remove", () => {
-    setup();
+  it("bullets: add, edit, move, remove", async () => {
+    await setup();
     loadExample();
     const b = S.experience[0]!.bullets;
     const bullets = () => vals(/bullet/i);
@@ -144,8 +142,8 @@ describe("criterion 5: add, edit, reorder, remove (en)", () => {
     expect(bullets()[0]).toBe(b[0]);
   });
 
-  it("education: add, edit, remove", () => {
-    setup();
+  it("education: add, edit, remove", async () => {
+    await setup();
     loadExample();
     click(/^add education$/i);
     expect(fields(/^school$/i)).toHaveLength(2);
@@ -159,8 +157,8 @@ describe("criterion 5: add, edit, reorder, remove (en)", () => {
     expect(vals(/^school$/i)).toEqual([e0.school]);
   });
 
-  it("education details: add and remove", () => {
-    setup();
+  it("education details: add and remove", async () => {
+    await setup();
     loadExample();
     const n = fields(/detail/i).length;
     fireEvent.click(btns(/^add detail/i)[0]!);
@@ -170,8 +168,8 @@ describe("criterion 5: add, edit, reorder, remove (en)", () => {
     expect(fields(/detail/i)).toHaveLength(n);
   });
 
-  it("skill groups and items: add, edit, move, remove", () => {
-    setup();
+  it("skill groups and items: add, edit, move, remove", async () => {
+    await setup();
     loadExample();
     const [g1, g2] = S.skills;
     click(/^add skill group$/i);
@@ -192,8 +190,8 @@ describe("criterion 5: add, edit, reorder, remove (en)", () => {
     ["links", /link/i, /^add link$/i, S.basics.links],
   ];
   for (const [name, label, add, initial] of lists) {
-    it(`${name}: add, edit, move, remove`, () => {
-      setup();
+    it(`${name}: add, edit, move, remove`, async () => {
+      await setup();
       loadExample();
       click(add);
       expect(fields(label)).toHaveLength(initial.length + 1);
@@ -210,8 +208,8 @@ describe("criterion 5: add, edit, reorder, remove (en)", () => {
 });
 
 describe("criterion 6: live preview (en)", () => {
-  it("typing a name shows it in the preview at once", () => {
-    setup();
+  it("typing a name shows it in the preview at once", async () => {
+    await setup();
     type(fields(/^name$/i)[0]!, "Sam Sample");
     expect(preview().textContent).toContain("Sam Sample");
     type(fields(/^name$/i)[0]!, "Sam S");
@@ -219,8 +217,8 @@ describe("criterion 6: live preview (en)", () => {
     expect(preview().textContent).toContain("Sam S");
   });
 
-  it("shows sections in order and leaves out empty ones", () => {
-    setup();
+  it("shows sections in order and leaves out empty ones", async () => {
+    await setup();
     loadExample();
     const heads = within(preview()).getAllByRole("heading");
     const wanted = ["Summary", "Experience", "Education", "Skills", "Certificates", "Languages"];
@@ -232,8 +230,8 @@ describe("criterion 6: live preview (en)", () => {
     expect(nameEl.compareDocumentPosition(found[0]!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it("empty editor previews no section headings; summary alone shows only Summary", () => {
-    setup();
+  it("empty editor previews no section headings; summary alone shows only Summary", async () => {
+    await setup();
     expect(within(preview()).queryAllByRole("heading", { name: /^(Summary|Experience|Education|Skills|Certificates|Languages)$/ })).toHaveLength(0);
     type(fields(/^summary$/i)[0]!, "Only a summary.");
     const names = within(preview()).getAllByRole("heading").map((h) => h.textContent?.trim());
@@ -241,16 +239,16 @@ describe("criterion 6: live preview (en)", () => {
     for (const n of ["Experience", "Education", "Skills", "Certificates", "Languages"]) expect(names).not.toContain(n);
   });
 
-  it("dates use formatRange in English", () => {
-    setup();
+  it("dates use formatRange in English", async () => {
+    await setup();
     loadExample();
     for (const e of S.experience) expect(preview().textContent).toContain(formatRange(e.start, e.end, "en"));
     const edu = S.education[0]!;
     expect(preview().textContent).toContain(formatRange(edu.start, edu.end, "en"));
   });
 
-  it("dates use formatRange in Chinese after switching language", () => {
-    setup();
+  it("dates use formatRange in Chinese after switching language", async () => {
+    await setup();
     loadExample();
     switchLang();
     for (const e of S.experience) expect(preview().textContent).toContain(formatRange(e.start, e.end, "zh"));
@@ -259,8 +257,8 @@ describe("criterion 6: live preview (en)", () => {
 });
 
 describe("criterion 7: Load example and Clear", () => {
-  it("Load example fills the editor with sampleResume", () => {
-    setup();
+  it("Load example fills the editor with sampleResume", async () => {
+    await setup();
     loadExample();
     expect(vals(/^name$/i)).toEqual([S.basics.name]);
     expect(vals(/^phone$/i)).toEqual([S.basics.phone]);
@@ -268,8 +266,8 @@ describe("criterion 7: Load example and Clear", () => {
     expect(preview().textContent).toContain("Alex Example");
   });
 
-  it("Clear asks for confirmation; declining keeps the data, accepting empties it", () => {
-    setup();
+  it("Clear asks for confirmation; declining keeps the data, accepting empties it", async () => {
+    await setup();
     loadExample();
     const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
     click(/^clear$/i);
@@ -285,25 +283,25 @@ describe("criterion 7: Load example and Clear", () => {
 });
 
 describe("criterion 10: dictionaries", () => {
-  it("en and zh have the same structure", () => {
+  it("en and zh have the same structure", async () => {
     expect(shape(zh)).toEqual(shape(en));
   });
-  it("zh has no English-only editor labels (see the Chinese label test in criterion 4)", () => {
+  it("zh has no English-only editor labels (see the Chinese label test in criterion 4)", async () => {
     expect(Object.keys(zh).sort()).toEqual(Object.keys(en).sort());
   });
 });
 
 describe("criterion 11: typed text is rendered as text", () => {
-  it("an img tag in the summary is shown literally", () => {
-    setup();
+  it("an img tag in the summary is shown literally", async () => {
+    await setup();
     const payload = "<img src=x onerror=alert(1)>";
     type(fields(/^summary$/i)[0]!, payload);
     expect(preview().textContent).toContain(payload);
     expect(document.querySelector("img")).toBeNull();
     expect(preview().querySelector("img")).toBeNull();
   });
-  it("script-like text in a bullet and name stays text", () => {
-    setup();
+  it("script-like text in a bullet and name stays text", async () => {
+    await setup();
     loadExample();
     type(fields(/^name$/i)[0]!, "<b>Bold</b>");
     type(fields(/bullet/i)[0]!, "<script>alert(1)</script>");
@@ -313,8 +311,8 @@ describe("criterion 11: typed text is rendered as text", () => {
 });
 
 describe("memory only (unit part of criterion 8)", () => {
-  it("editing writes nothing to localStorage, sessionStorage or cookies", () => {
-    setup();
+  it("editing writes nothing to localStorage, sessionStorage or cookies", async () => {
+    await setup();
     loadExample();
     type(fields(/^name$/i)[0]!, "Sam Sample");
     click(/^add experience$/i);

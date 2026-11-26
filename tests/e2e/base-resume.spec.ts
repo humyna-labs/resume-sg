@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 // resume-sg#6 criteria 8 and 9: memory only, keyboard, 360 px, screenshots.
+import { openEditor } from "./flow-helpers.ts";
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 
@@ -13,7 +14,7 @@ test.describe("base resume e2e", () => {
     const origin = new URL(baseURL ?? "http://127.0.0.1:4173").origin;
     const urls: string[] = [];
     page.on("request", (q) => urls.push(q.url()));
-    await page.goto("/#/app");
+    await openEditor(page);
     await expect(page.getByTestId("resume-editor")).toBeVisible();
     await nameField(page).fill("Sam Sample");
     await page.getByRole("button", { name: /^add experience$/i }).click();
@@ -40,7 +41,7 @@ test.describe("base resume e2e", () => {
   });
 
   test("criterion 9: keyboard reaches every control, each has a name", async ({ page }) => {
-    await page.goto("/#/app");
+    await openEditor(page);
     await loadExample(page);
     const total = await page.evaluate(() => {
       const sel = "main input, main textarea, main select, main button, main a[href]";
@@ -77,7 +78,7 @@ test.describe("base resume e2e", () => {
   for (const lang of ["en", "zh"] as const) {
     test(`criterion 9: 360 px has no horizontal scroll, screenshot ${lang}`, async ({ page }) => {
       await page.setViewportSize({ width: 360, height: 800 });
-      await page.goto("/#/app");
+      await openEditor(page);
       await loadExample(page);
       if (lang === "zh") await page.locator("button.lang").click();
       await expect(page.locator("html")).toHaveAttribute("lang", lang === "zh" ? "zh-CN" : "en");
@@ -90,7 +91,7 @@ test.describe("base resume e2e", () => {
 
   test("criterion 6: preview sits beside the editor on wide screens and below under 720 px", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
-    await page.goto("/#/app");
+    await openEditor(page);
     const box = async () => ({
       e: (await page.getByTestId("resume-editor").boundingBox())!,
       p: (await page.getByTestId("resume-preview").boundingBox())!,
