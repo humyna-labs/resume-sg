@@ -95,7 +95,10 @@ describe("criterion 2: How it works", () => {
           : ["你的浏览器", "Anthropic（使用你的 key）", "JD2CV 服务器：没有"];
       for (const p of parts) expect(t).toContain(p);
       expect(t).toContain("⇄");
-      expect(main().querySelectorAll("img").length).toBe(0);
+      // ui-polish (#42): the only image is the illustration, a file URL and never inline data
+      const imgs = Array.from(main().querySelectorAll("img"));
+      expect(imgs.length).toBeLessThanOrEqual(1);
+      for (const i of imgs) expect(i.getAttribute("src") ?? "").not.toMatch(/^data:/);
     });
     it(`AI does and AI never lists, ${lang}`, () => {
       setup("#/how-it-works", lang);
