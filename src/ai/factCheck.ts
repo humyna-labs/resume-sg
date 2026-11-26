@@ -123,8 +123,35 @@ function dice(a: string, b: string): number {
   return (2 * hit) / (a.length - 1 + (b.length - 1));
 }
 
+// ---------------------------------------------------------------- language, basics, items
+const HAN_RE = /\p{Script=Han}/gu;
+const LATIN_RE = /[A-Za-z]/g;
+
+/** "zh" when Han characters are at least 30% of the letters (Han plus Latin) of the text, else "en". */
+export function detectLang(text: string): "en" | "zh" {
+  const han = (text.match(HAN_RE) ?? []).length;
+  const latin = (text.match(LATIN_RE) ?? []).length;
+  const total = han + latin;
+  return total > 0 && han * 100 >= 30 * total ? "zh" : "en";
+}
+
+const digitsOf = (s: string): string => s.replace(/\D/g, "");
+const escapeRe = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const isLatinItem = (s: string): boolean => /[A-Za-z]/.test(s) && !/\p{Script=Han}/u.test(s);
+
+/** Whether `item` occurs in `haystack` (case-insensitive); alphanumeric edges must sit on a word boundary. */
+function occurs(haystack: string, item: string): boolean {
+  const it = normalise(item);
+  if (it === "") return true;
+  const pre = /^[A-Za-z0-9]/.test(it) ? "(?<![A-Za-z0-9])" : "";
+  const post = /[A-Za-z0-9]$/.test(it) ? "(?![A-Za-z0-9])" : "";
+  return new RegExp(`${pre}${escapeRe(it)}${post}`, "i").test(haystack);
+}
+
+export const NAME_CHECK_TEXT = "请核对姓名拼写 / Check the name spelling";
+
 // ---------------------------------------------------------------- checker
-export function factCheck(original: string, out: TailorOutput): Finding[] {
+export function factCheck(original: string, out: TailorOutput, opts?: { outputLang?: "en" | "zh" }): Finding[] {
   const findings: Finding[] = [];
   const seen = new Set<string>();
   const add = (level: Finding["level"], kind: FindingKind, where: string, value: string): void => {
@@ -135,6 +162,8 @@ export function factCheck(original: string, out: TailorOutput): Finding[] {
   };
 
   const norm = normalise(original);
+  const lower = norm.toLowerCase();
+  const cross = opts?.outputLang !== undefined && opts.outputLang !== detectLang(original);
   const r = out.resume;
   const goodSources: string[] = [];
   const badSources: string[] = [];
@@ -153,6 +182,15 @@ export function factCheck(original: string, out: TailorOutput): Finding[] {
 
   /** (c): each fact must occur in the entry's source, which must itself have passed (a). */
   const checkFacts = (where: string, sourceOk: boolean, source: string, facts: [string, string][]): void => {
+    if (cross) {
+      // Cross language: only Latin-script tokens (brand names) must occur in the original.
+      for (const [field, value] of facts) {
+        for (const m of value.matchAll(/[A-Za-z][A-Za-z0-9]+/g)) {
+          if (!lower.includes(m[0].toLowerCase())) add("red", "unsourced", field ? `${where}.${field}` : where, m[0]);
+        }
+      }
+      return;
+    }
     const s = normalise(source);
     for (const [field, value] of facts) {
       const v = normalise(value);
@@ -222,6 +260,33 @@ export function factCheck(original: string, out: TailorOutput): Finding[] {
   );
   out.notIncluded.forEach((n, i) => checkSource(`notIncluded[${i}]`, n.source));
 
+  // Basics: email, links, phone, name.
+  const b = r.basics;
+  const email = normalise(b.email).toLowerCase();
+  if (email !== "" && !lower.includes(email)) add("red", "basics", "basics.email", b.email);
+  b.links.forEach((l, i) => {
+    const link = normalise(l).toLowerCase();
+    if (link !== "" && !lower.includes(link)) add("red", "basics", `basics.links[${i}]`, l);
+  });
+  const phoneDigits = digitsOf(b.phone);
+  if (phoneDigits !== "" && !original.split(/\r?\n/).some((l) => digitsOf(l).includes(phoneDigits))) {
+    add("red", "basics", "basics.phone", b.phone);
+  }
+  const name = normalise(b.name).toLowerCase();
+  if (name !== "" && !lower.includes(name)) {
+    if (cross) add("amber", "basics", "basics.name", NAME_CHECK_TEXT);
+    else add("red", "basics", "basics.name", b.name);
+  }
+
+  // Items: skills, project tech, languages.
+  const checkItem = (where: string, item: string): void => {
+    if (normalise(item) === "" || occurs(norm, item)) return;
+    add(!cross || isLatinItem(item) ? "red" : "amber", "item", where, item);
+  };
+  r.skills.forEach((s, i) => s.items.forEach((it, j) => checkItem(`skills[${i}].items[${j}]`, it)));
+  r.projects.forEach((p, i) => p.tech.forEach((it, j) => checkItem(`projects[${i}].tech[${j}]`, it)));
+  r.languages.forEach((it, i) => checkItem(`languages[${i}]`, it));
+
   // (b) summary: numbers may come from anywhere in the original.
   checkNumbers("summary", r.summary, original);
 
@@ -230,6 +295,10 @@ export function factCheck(original: string, out: TailorOutput): Finding[] {
     const line = normalise(rawLine.trim().replace(/^(?:[-•*]|\d+\.)\s+/, ""));
     if (line === "") return;
     if (HEADINGS.has(line.replace(/\s*[:：]$/, "").toLowerCase())) return;
+    const ll = line.toLowerCase();
+    if (name !== "" && ll.includes(name)) return;
+    if (email !== "" && ll.includes(email)) return;
+    if (phoneDigits !== "" && digitsOf(line).includes(phoneDigits)) return;
     if (goodSources.some((s) => line.includes(s) || s.includes(line))) return;
     if (badSources.some((s) => line.includes(s) || s.includes(line))) return;
     // A source that failed (a) is already red; it still stands for the line it tried to cite.

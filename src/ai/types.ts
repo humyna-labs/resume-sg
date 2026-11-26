@@ -58,7 +58,7 @@ export interface TailorOutput {
   notIncluded: { source: string }[];
 }
 
-export type FindingKind = "source" | "number" | "unsourced" | "date" | "coverage";
+export type FindingKind = "source" | "number" | "unsourced" | "date" | "coverage" | "basics" | "item";
 export interface Finding {
   id: string;
   level: "red" | "amber";
