@@ -253,6 +253,14 @@ const strings = {
   "ed.editorLabel": "Resume editor",
   "ed.previewLabel": "Resume preview",
   "ed.previewEmpty": "Your resume appears here as you type.",
+  "page.templates": "Templates",
+  "tpl.lead": "The two resume templates, shown with a made-up example person.",
+  "tpl.switchLabel": "Template",
+  "tpl.classic": "Classic",
+  "tpl.modern": "Modern",
+  "tpl.langLabel": "Output language",
+  "tpl.english": "English",
+  "tpl.chinese": "中文",
 } as const;
 
 /** Rich text as structured data: plain strings plus marked parts, built into React elements by RichText. */

@@ -9,6 +9,7 @@ import { Faq } from "./pages/Faq.tsx";
 import { HowItWorks } from "./pages/HowItWorks.tsx";
 import { AppPage } from "./pages/AppPage.tsx";
 import { Disclaimer } from "./pages/Disclaimer.tsx";
+import { Templates } from "./pages/Templates.tsx";
 import { Privacy } from "./pages/Privacy.tsx";
 import "./styles/tokens.css";
 import "./styles/app.css";
@@ -42,6 +43,9 @@ export function App() {
       break;
     case "disclaimer":
       page = <Disclaimer />;
+      break;
+    case "templates":
+      page = <Templates />;
       break;
     default:
       page = <Home />;
