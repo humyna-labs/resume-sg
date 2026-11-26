@@ -72,10 +72,17 @@ export function Classic({ resume, lang }: TemplateProps) {
               <div className="tc-entry" key={e.id}>
                 <div className="tc-keep">
                   <div className="tc-row">
-                    <span className="tc-title">{e.title}</span>
+                    <span className="tc-lead">
+                      <span className="tc-title">{e.title}</span>
+                      {organisation(e.company, e.location, lang) !== "" ? (
+                        <span className="tc-org">
+                          {lang === "zh" ? "　" : " — "}
+                          {organisation(e.company, e.location, lang)}
+                        </span>
+                      ) : null}
+                    </span>
                     <span className="tc-dates">{formatRange(e.start, e.end, lang)}</span>
                   </div>
-                  {organisation(e.company, e.location, lang) !== "" ? <div className="tc-org">{organisation(e.company, e.location, lang)}</div> : null}
                   <Bullets items={bullets.slice(0, 1)} />
                 </div>
                 <Bullets items={bullets.slice(1)} />
@@ -92,10 +99,17 @@ export function Classic({ resume, lang }: TemplateProps) {
             <div className="tc-entry" key={e.id}>
               <div className="tc-keep">
                 <div className="tc-row">
-                  <span className="tc-title">{e.school}</span>
+                  <span className="tc-lead">
+                    <span className="tc-title">{e.degree !== "" ? e.degree : e.school}</span>
+                    {e.degree !== "" && e.school.trim() !== "" ? (
+                      <span className="tc-org">
+                        {lang === "zh" ? "　" : " — "}
+                        {e.school}
+                      </span>
+                    ) : null}
+                  </span>
                   <span className="tc-dates">{formatRange(e.start, e.end, lang)}</span>
                 </div>
-                {e.degree !== "" ? <div className="tc-org">{e.degree}</div> : null}
                 <Bullets items={filled(e.details).slice(0, 1)} />
               </div>
               <Bullets items={filled(e.details).slice(1)} />

@@ -59,10 +59,17 @@ export function Modern({ resume, lang }: TemplateProps) {
                 <div className="tm-entry" key={e.id}>
                   <div className="tm-keep">
                     <div className="tm-row">
-                      <span className="tm-title">{e.title}</span>
+                      <span className="tm-lead">
+                        <span className="tm-title">{e.title}</span>
+                        {organisation(e.company, e.location, lang) !== "" ? (
+                          <span className="tm-org">
+                            {lang === "zh" ? "　" : " · "}
+                            {organisation(e.company, e.location, lang)}
+                          </span>
+                        ) : null}
+                      </span>
                       <span className="tm-dates">{formatRange(e.start, e.end, lang)}</span>
                     </div>
-                    {organisation(e.company, e.location, lang) !== "" ? <div className="tm-org">{organisation(e.company, e.location, lang)}</div> : null}
                     <Bullets items={bullets.slice(0, 1)} />
                   </div>
                   <Bullets items={bullets.slice(1)} />
@@ -79,10 +86,17 @@ export function Modern({ resume, lang }: TemplateProps) {
               <div className="tm-entry" key={e.id}>
                 <div className="tm-keep">
                   <div className="tm-row">
-                    <span className="tm-title">{e.school}</span>
+                    <span className="tm-lead">
+                      <span className="tm-title">{e.degree !== "" ? e.degree : e.school}</span>
+                      {e.degree !== "" && e.school.trim() !== "" ? (
+                        <span className="tm-org">
+                          {lang === "zh" ? "　" : " · "}
+                          {e.school}
+                        </span>
+                      ) : null}
+                    </span>
                     <span className="tm-dates">{formatRange(e.start, e.end, lang)}</span>
                   </div>
-                  {e.degree !== "" ? <div className="tm-org">{e.degree}</div> : null}
                   <Bullets items={filled(e.details).slice(0, 1)} />
                 </div>
                 <Bullets items={filled(e.details).slice(1)} />
