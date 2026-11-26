@@ -161,7 +161,11 @@ describe("criterion 11: no new dependency, image, font file or external URL in C
   });
   it("no image or font files under src or public", () => {
     const files = [...SRC, ...walk("public")];
-    expect(files.filter((f) => /\.(png|jpe?g|gif|webp|avif|svg|ico|woff2?|ttf|otf|eot)$/i.test(f))).toEqual([]);
+    // ui-polish (#42) allows exactly the two How it works SVGs under src/assets/illustrations/.
+    const allowed = /(^|[\\/])src[\\/]assets[\\/]illustrations[\\/]how-it-works-(zh|en)\.svg$/;
+    expect(
+      files.filter((f) => !allowed.test(f) && /\.(png|jpe?g|gif|webp|avif|svg|ico|woff2?|ttf|otf|eot)$/i.test(f)),
+    ).toEqual([]);
   });
   it("CSS has no url(), @import or @font-face and no external address", () => {
     for (const f of CSS_FILES) {
