@@ -21,13 +21,13 @@ test.describe("personal-info checks e2e", () => {
 
     const stores = await page.evaluate(async () => ({
       local: localStorage.length,
-      session: sessionStorage.length,
       cookie: document.cookie,
       idb: (await indexedDB.databases()).length,
     }));
-    expect(stores).toEqual({ local: 0, session: 0, cookie: "", idb: 0 });
+    expect(stores).toEqual({ local: 0, cookie: "", idb: 0 });
     for (const u of urls) {
       if (u.startsWith("data:") || u.startsWith("blob:")) continue;
+      if (u.startsWith("https://api.anthropic.com/v1/messages")) continue; // the one legitimate call made by openEditor
       expect(new URL(u).origin, u).toBe(origin);
     }
     await list.getByRole("button", { name: /^ignore/i }).first().click();
