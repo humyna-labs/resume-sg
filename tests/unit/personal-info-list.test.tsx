@@ -7,16 +7,14 @@
 //    pi.show ("Show me" / "定位"), pi.ignore ("Ignore" / "忽略"), and keys starting "pi.line"
 //    (the suggestion sentences; at least 5, one per finding id). Every "pi." value is checked by criterion 8.
 //  - "Show me" focuses the field's input (the summary field has id "summary").
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { App } from "../../src/App.tsx";
+import { openEditor } from "./flow-helpers.tsx";
 import en from "../../src/i18n/en.ts";
 import zh from "../../src/i18n/zh.ts";
 
-const setup = (lang = "en-US") => {
-  vi.spyOn(window.navigator, "language", "get").mockReturnValue(lang);
-  window.location.hash = "#/app";
-  return render(<App />);
+const setup = async (lang = "en-US") => {
+  await openEditor(lang === "zh-CN" ? "zh" : "en");
 };
 const editor = () => screen.getByTestId("resume-editor");
 const list = () => screen.queryByTestId("personal-info-list");
@@ -40,14 +38,14 @@ afterEach(() => {
 });
 
 describe("criterion 6: the list", () => {
-  it("is not rendered with no finding", () => {
-    setup();
+  it("is not rendered with no finding", async () => {
+    await setup();
     expect(list()).toBeNull();
     type(/^summary$/i, "Backend engineer with six years of experience.");
     expect(list()).toBeNull();
   });
-  it("typing the trigger shows the line, removing it hides the list", () => {
-    setup();
+  it("typing the trigger shows the line, removing it hides the list", async () => {
+    await setup();
     type(/^summary$/i, "Age: 32");
     const l = need();
     expect(within(l).getByText(/before you send it/i)).toBeTruthy();
@@ -56,13 +54,13 @@ describe("criterion 6: the list", () => {
     type(/^summary$/i, "Backend engineer.");
     expect(list()).toBeNull();
   });
-  it("one line per finding id", () => {
-    setup();
+  it("one line per finding id", async () => {
+    await setup();
     type(/^summary$/i, "Age: 32. Photo attached. Religion: none. NRIC S0000000Z. Married. DOB 1 Jan. 照片");
     expect(within(need()).getAllByRole("listitem")).toHaveLength(5);
   });
-  it("shows the Chinese line in Chinese", () => {
-    setup("zh-CN");
+  it("shows the Chinese line in Chinese", async () => {
+    await setup("zh-CN");
     type(/^简介$/, "年龄：32");
     const l = need();
     expect(l.textContent).toContain("简介中提到了年龄。许多雇主不需要这项信息，你可以删掉。");
@@ -71,16 +69,16 @@ describe("criterion 6: the list", () => {
 });
 
 describe("criterion 7: Show me and Ignore", () => {
-  it("Show me focuses the field and removes nothing", () => {
-    setup();
+  it("Show me focuses the field and removes nothing", async () => {
+    await setup();
     type(/^summary$/i, "Age: 32");
     fireEvent.click(within(need()).getByRole("button", { name: /^show me/i }));
     expect(document.activeElement?.id).toBe("summary");
     expect(summaryValue()).toBe("Age: 32");
     expect(list()).toBeTruthy();
   });
-  it("Ignore hides that finding for the session, keeps the text, other findings stay", () => {
-    setup();
+  it("Ignore hides that finding for the session, keeps the text, other findings stay", async () => {
+    await setup();
     type(/^summary$/i, "Age: 32. Religion: none");
     const items = within(need()).getAllByRole("listitem");
     expect(items).toHaveLength(2);
@@ -93,8 +91,8 @@ describe("criterion 7: Show me and Ignore", () => {
     expect(need().textContent).not.toMatch(/your age/i);
     expect(summaryValue()).toBe("Age: 33. Religion: none");
   });
-  it("Chinese buttons are 定位 and 忽略", () => {
-    setup("zh-CN");
+  it("Chinese buttons are 定位 and 忽略", async () => {
+    await setup("zh-CN");
     type(/^简介$/, "年龄：32");
     expect(within(need()).getByRole("button", { name: /^定位/ })).toBeTruthy();
     fireEvent.click(within(need()).getByRole("button", { name: /^忽略/ }));
@@ -108,7 +106,7 @@ describe("criteria 8 and 10: dictionaries", () => {
   const E = pi(en);
   const Z = pi(zh);
 
-  it("10: new strings exist in both dictionaries with the same keys", () => {
+  it("10: new strings exist in both dictionaries with the same keys", async () => {
     expect(E.length).toBeGreaterThanOrEqual(8);
     expect(E.map(([k]) => k).sort()).toEqual(Z.map(([k]) => k).sort());
     const e = Object.fromEntries(E);
@@ -117,11 +115,11 @@ describe("criteria 8 and 10: dictionaries", () => {
     expect([z["pi.title"], z["pi.show"], z["pi.ignore"]]).toEqual(["发送前看一看", "定位", "忽略"]);
     for (const [k, v] of [...E, ...Z]) expect(v.trim(), k).not.toBe("");
   });
-  it("8: no suggestion text is a legal claim", () => {
+  it("8: no suggestion text is a legal claim", async () => {
     expect(E.length).toBeGreaterThan(0);
     for (const [k, v] of [...E, ...Z]) expect(v, k).not.toMatch(FORBIDDEN);
   });
-  it("8: each suggestion line says many employers do not need it", () => {
+  it("8: each suggestion line says many employers do not need it", async () => {
     const le = E.filter(([k]) => k.startsWith("pi.line"));
     const lz = Z.filter(([k]) => k.startsWith("pi.line"));
     expect(le.length).toBeGreaterThanOrEqual(5);

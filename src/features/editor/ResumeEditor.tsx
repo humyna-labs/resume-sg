@@ -113,9 +113,9 @@ function StringList({
   );
 }
 
-export function ResumeEditor() {
+export function ResumeEditor({ initial }: { initial?: Resume }) {
   const t = useT();
-  const [r, setR] = useState<Resume>(emptyResume);
+  const [r, setR] = useState<Resume>(() => initial ?? emptyResume());
   const apply = (f: (r: Resume) => Resume) => setR((cur) => f(cur));
 
   function onClear() {

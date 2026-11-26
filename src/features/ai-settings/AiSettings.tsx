@@ -1,38 +1,22 @@
 import { useRef, useState } from "react";
 import { AiConsentLine } from "../../app/AiConsentLine.tsx";
 import { AiError, callAnthropic } from "../../ai/anthropic.ts";
-import { CUSTOM_CHOICE, DEFAULT_MODEL, MODEL_CHOICES, isValidModel } from "../../ai/settings.ts";
+import { CUSTOM_CHOICE, MODEL_CHOICES } from "../../ai/settings.ts";
 import type { StrKey } from "../../i18n/en.ts";
 import { useT } from "../../i18n/index.ts";
-import { getKey, isRemembered, setKey } from "../../security/keyStore.ts";
+import { getKey } from "../../security/keyStore.ts";
+import type { AiConfig } from "./useAiConfig.ts";
 
 const REL = "noopener noreferrer";
 
-export function AiSettings() {
+export function AiSettings({ cfg }: { cfg: AiConfig }) {
   const t = useT();
-  const [key, setKeyState] = useState(getKey);
-  const [remember, setRemember] = useState(isRemembered);
+  const { key, remember, choice, custom, isCustom, model, modelOk, onKey, onRemember, setChoice, setCustom } = cfg;
   const [shown, setShown] = useState(false);
   const [helpOpen, setHelpOpen] = useState(() => getKey() === "");
-  const [choice, setChoice] = useState<string>(DEFAULT_MODEL);
-  const [custom, setCustom] = useState<string>(DEFAULT_MODEL);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<StrKey | null>(null);
   const running = useRef(false);
-
-  const isCustom = choice === CUSTOM_CHOICE;
-  const model = isCustom ? custom : choice;
-  const modelOk = isCustom ? isValidModel(custom) : true;
-
-  function onKey(value: string) {
-    setKeyState(value);
-    setKey(value, remember);
-  }
-
-  function onRemember(checked: boolean) {
-    setRemember(checked);
-    setKey(key, checked);
-  }
 
   async function onTest() {
     if (running.current || key === "" || !modelOk) return;

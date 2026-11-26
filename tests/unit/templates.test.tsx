@@ -5,6 +5,7 @@ import { join } from "node:path";
 import type { ComponentType } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { App } from "../../src/App.tsx";
+import { openEditor } from "./flow-helpers.tsx";
 import { parseRoute } from "../../src/app/route.ts";
 import * as enMod from "../../src/i18n/en.ts";
 import * as zhMod from "../../src/i18n/zh.ts";
@@ -56,18 +57,18 @@ afterEach(() => {
 });
 
 describe("contract", () => {
-  it("TEMPLATES lists classic then modern and the default is classic", () => {
+  it("TEMPLATES lists classic then modern and the default is classic", async () => {
     expect(TEMPLATES.map((t) => t.id)).toEqual(["classic", "modern"]);
     expect(DEFAULT_TEMPLATE).toBe("classic");
   });
 
-  it("referenceSample returns exactly the reference data for en and zh", () => {
+  it("referenceSample returns exactly the reference data for en and zh", async () => {
     expect(referenceSample("en")).toEqual(REFERENCE.en);
     expect(referenceSample("zh")).toEqual(REFERENCE.zh);
   });
 
   for (const id of ["classic", "modern"]) {
-    it(`${id}: renders one root with data-template="${id}" and data-print-root`, () => {
+    it(`${id}: renders one root with data-template="${id}" and data-print-root`, async () => {
       const root = renderTemplate(id, REFERENCE.en, "en");
       expect(root.getAttribute("data-template")).toBe(id);
       expect(root.hasAttribute("data-print-root")).toBe(true);
@@ -80,7 +81,7 @@ describe.each(["classic", "modern"])("criterion 2 and 7: %s", (id) => {
   for (const lang of ["en", "zh"] as const) {
     const sample = REFERENCE[lang];
 
-    it(`criterion 2: renders every section of the ${lang} sample, in the ${lang} section names`, () => {
+    it(`criterion 2: renders every section of the ${lang} sample, in the ${lang} section names`, async () => {
       const root = renderTemplate(id, sample, lang);
       const found = sectionHeadings(root, lang).map((h) => norm(h.textContent ?? "").toLowerCase());
       expect(found).toEqual(NAMES[lang].map((n) => n.toLowerCase()));
@@ -103,7 +104,7 @@ describe.each(["classic", "modern"])("criterion 2 and 7: %s", (id) => {
       for (const l of sample.languages) expect(text).toContain(l);
     });
 
-    it(`criterion 2: ${lang} dates use the en dash with spaces and "Present"/"至今"`, () => {
+    it(`criterion 2: ${lang} dates use the en dash with spaces and "Present"/"至今"`, async () => {
       const text = renderTemplate(id, sample, lang).textContent ?? "";
       if (lang === "en") {
         expect(text).toContain("Mar 2021 – Present");
@@ -116,7 +117,7 @@ describe.each(["classic", "modern"])("criterion 2 and 7: %s", (id) => {
       expect(text).toContain("2011 – 2015");
     });
 
-    it(`criterion 7: ${lang} text reads header, then sections in the fixed order`, () => {
+    it(`criterion 7: ${lang} text reads header, then sections in the fixed order`, async () => {
       const root = renderTemplate(id, sample, lang);
       const hs = sectionHeadings(root, lang);
       const text = root.textContent ?? "";
@@ -135,7 +136,7 @@ describe.each(["classic", "modern"])("criterion 2 and 7: %s", (id) => {
       }
     });
 
-    it(`criterion 7: ${lang} has no img, svg, canvas, picture or inline background image or fixed position`, () => {
+    it(`criterion 7: ${lang} has no img, svg, canvas, picture or inline background image or fixed position`, async () => {
       const root = renderTemplate(id, sample, lang);
       expect(root.querySelectorAll("img, svg, canvas, picture, video, iframe").length).toBe(0);
       for (const el of Array.from(root.querySelectorAll<HTMLElement>("*"))) {
@@ -145,19 +146,19 @@ describe.each(["classic", "modern"])("criterion 2 and 7: %s", (id) => {
     });
   }
 
-  it("criterion 2: section names follow the output language, not the UI language", () => {
+  it("criterion 2: section names follow the output language, not the UI language", async () => {
     const root = renderTemplate(id, REFERENCE.zh, "zh"); // UI language is en
     expect(sectionHeadings(root, "en").length).toBe(0);
     expect(sectionHeadings(root, "zh").length).toBe(6);
   });
 
-  it("criterion 2: zh skills line and languages use Chinese punctuation", () => {
+  it("criterion 2: zh skills line and languages use Chinese punctuation", async () => {
     const text = renderTemplate(id, REFERENCE.zh, "zh").textContent ?? "";
     expect(text).toContain("英语（工作语言）；普通话（母语）");
     if (id === "classic") expect(text).toContain("编程语言：Java、Kotlin、SQL");
   });
 
-  it("criterion 2: Certificates and Languages are two separate sections", () => {
+  it("criterion 2: Certificates and Languages are two separate sections", async () => {
     const root = renderTemplate(id, REFERENCE.en, "en");
     const names = headingEls(root).map((h) => norm(h.textContent ?? "").toLowerCase());
     expect(names).toContain("certificates");
@@ -165,7 +166,7 @@ describe.each(["classic", "modern"])("criterion 2 and 7: %s", (id) => {
     expect(names.some((n) => n.includes("certificates") && n.includes("languages"))).toBe(false);
   });
 
-  it("criterion 2: empty sections are not rendered", () => {
+  it("criterion 2: empty sections are not rendered", async () => {
     const r: Resume = { ...REFERENCE.en, certificates: [], languages: [] };
     const root = renderTemplate(id, r, "en");
     const names = headingEls(root).map((h) => norm(h.textContent ?? "").toLowerCase());
@@ -174,7 +175,7 @@ describe.each(["classic", "modern"])("criterion 2 and 7: %s", (id) => {
     expect(names).toContain("skills");
   });
 
-  it("criterion 2: a resume with only a name has no section headings", () => {
+  it("criterion 2: a resume with only a name has no section headings", async () => {
     const r = emptyResume();
     r.basics.name = "Sam Sample";
     const root = renderTemplate(id, r, "en");
@@ -182,7 +183,7 @@ describe.each(["classic", "modern"])("criterion 2 and 7: %s", (id) => {
     expect(sectionHeadings(root, "en").length).toBe(0);
   });
 
-  it("criterion 7: contact details are in the body, and the template has no header/footer landmarks outside content", () => {
+  it("criterion 7: contact details are in the body, and the template has no header/footer landmarks outside content", async () => {
     const root = renderTemplate(id, REFERENCE.en, "en");
     expect(root.textContent).toContain("jamie.lin@example.com");
     expect(root.textContent).toContain("github.com/jamielin-example");
@@ -207,15 +208,13 @@ const isSelected = (el: HTMLElement) =>
 const activate = (el: HTMLElement) => fireEvent.click(el);
 
 describe("criterion 1: template switcher on the App page", () => {
-  function setup(lang: L = "en") {
-    vi.spyOn(window.navigator, "language", "get").mockReturnValue(TAG[lang]);
-    window.location.hash = "#/app";
-    return render(<App />);
+  async function setup(lang: L = "en") {
+    await openEditor(lang);
   }
   const roots = () => Array.from(document.querySelectorAll<HTMLElement>("[data-template]"));
 
-  it("shows Classic by default, switches to Modern and back, changing only the preview", () => {
-    setup();
+  it("shows Classic by default, switches to Modern and back, changing only the preview", async () => {
+    await setup();
     fireEvent.click(screen.getByRole("button", { name: /^load example$/i }));
     expect(isSelected(control(CLASSIC))).toBe(true);
     expect(isSelected(control(MODERN))).toBe(false);
@@ -239,8 +238,8 @@ describe("criterion 1: template switcher on the App page", () => {
     expect(roots().map((r) => r.dataset.template)).toEqual(["classic"]);
   });
 
-  it("the template shows the user's edits live", () => {
-    setup();
+  it("the template shows the user's edits live", async () => {
+    await setup();
     const editor = screen.getByTestId("resume-editor");
     fireEvent.change(within(editor).getByLabelText(/^name$/i), { target: { value: "Sam Sample" } });
     expect(roots()[0]?.textContent).toContain("Sam Sample");
@@ -251,11 +250,11 @@ describe("criterion 1: template switcher on the App page", () => {
 
 // ---- criterion 9 and the route ----
 describe("criterion 9 and #/templates", () => {
-  it("parseRoute knows #/templates", () => {
+  it("parseRoute knows #/templates", async () => {
     expect(parseRoute("#/templates")).not.toBe("home");
   });
 
-  it("en and zh dictionaries stay the same shape and hold the new strings", () => {
+  it("en and zh dictionaries stay the same shape and hold the new strings", async () => {
     expect(shape(en)).toEqual(shape(zh));
     const enVals = leafValues(en).map((v) => v.trim());
     const zhVals = leafValues(zh).map((v) => v.trim());
@@ -264,7 +263,7 @@ describe("criterion 9 and #/templates", () => {
   });
 
   for (const [lang, title] of [["en", "Templates"], ["zh", "模板"]] as const) {
-    it(`#/templates (${lang}) has a "${title}" page with both switches, defaulting to Classic and the sample`, () => {
+    it(`#/templates (${lang}) has a "${title}" page with both switches, defaulting to Classic and the sample`, async () => {
       vi.spyOn(window.navigator, "language", "get").mockReturnValue(TAG[lang]);
       window.location.hash = "#/templates";
       render(<App />);
@@ -296,7 +295,7 @@ describe("criterion 8: no external resources, fonts or images under src/template
     }
   })();
 
-  it("has the classic and modern folders with css and components", () => {
+  it("has the classic and modern folders with css and components", async () => {
     for (const id of ["classic", "modern"]) {
       const mine = files.filter((f) => f.includes(`/${id}/`));
       expect(mine.some((f) => f.endsWith(".css")), `${id} css`).toBe(true);
@@ -306,7 +305,7 @@ describe("criterion 8: no external resources, fonts or images under src/template
     expect(files.some((f) => f.endsWith("referenceSample.ts"))).toBe(true);
   });
 
-  it("contains no url(, @import, @font-face or http", () => {
+  it("contains no url(, @import, @font-face or http", async () => {
     expect(files.length).toBeGreaterThan(0);
     for (const f of files) {
       const s = readFileSync(f, "utf8");
@@ -316,7 +315,7 @@ describe("criterion 8: no external resources, fonts or images under src/template
     }
   });
 
-  it("has no font or image files and no background-image or position: fixed", () => {
+  it("has no font or image files and no background-image or position: fixed", async () => {
     expect(files.length).toBeGreaterThan(0);
     for (const f of files) {
       expect(f).not.toMatch(/\.(png|jpe?g|gif|svg|webp|ico|woff2?|ttf|otf|eot)$/i);
@@ -328,7 +327,7 @@ describe("criterion 8: no external resources, fonts or images under src/template
     }
   });
 
-  it("adds no dependency", () => {
+  it("adds no dependency", async () => {
     const pkg = JSON.parse(readFileSync(join(process.cwd(), "package.json"), "utf8")) as { dependencies: Record<string, string> };
     expect(Object.keys(pkg.dependencies).sort()).toEqual(["react", "react-dom"]);
   });

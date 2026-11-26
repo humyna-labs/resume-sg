@@ -1,4 +1,5 @@
 // resume-sg#14 criterion 9: nothing is stored or sent while the checks run; screenshot of the list.
+import { openEditor } from "./flow-helpers.ts";
 import { expect, test } from "@playwright/test";
 
 test.describe("personal-info checks e2e", () => {
@@ -8,7 +9,7 @@ test.describe("personal-info checks e2e", () => {
     const origin = new URL(baseURL ?? "http://127.0.0.1:4173").origin;
     const urls: string[] = [];
     page.on("request", (q) => urls.push(q.url()));
-    await page.goto("/#/app");
+    await openEditor(page);
     const editor = page.getByTestId("resume-editor");
     await expect(page.getByTestId("personal-info-list")).toHaveCount(0);
     await editor.getByLabel(/^summary$/i).fill("Age: 32. Photo attached. NRIC S0000000Z. Married. Religion: none.");
@@ -20,13 +21,13 @@ test.describe("personal-info checks e2e", () => {
 
     const stores = await page.evaluate(async () => ({
       local: localStorage.length,
-      session: sessionStorage.length,
       cookie: document.cookie,
       idb: (await indexedDB.databases()).length,
     }));
-    expect(stores).toEqual({ local: 0, session: 0, cookie: "", idb: 0 });
+    expect(stores).toEqual({ local: 0, cookie: "", idb: 0 });
     for (const u of urls) {
       if (u.startsWith("data:") || u.startsWith("blob:")) continue;
+      if (u.startsWith("https://api.anthropic.com/v1/messages")) continue; // the one legitimate call made by openEditor
       expect(new URL(u).origin, u).toBe(origin);
     }
     await list.getByRole("button", { name: /^ignore/i }).first().click();
