@@ -820,10 +820,6 @@ mark {
   margin-top: 4px;
 }
 .preview {
-  position: sticky;
-  top: calc(var(--nav-h) + 16px);
-  max-height: calc(100vh - var(--nav-h) - 32px);
-  overflow: auto;
   color: var(--text);
 }
 .preview section {
@@ -872,7 +868,7 @@ mark {
   .editor .cols {
     grid-template-columns: minmax(0, 1fr);
   }
-  .preview {
+  .preview-col {
     position: static;
     max-height: none;
   }
@@ -898,4 +894,20 @@ mark {
   display: grid;
   gap: 12px;
   overflow-wrap: anywhere;
+}
+.preview-col {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  align-content: start;
+  position: sticky;
+  top: calc(var(--nav-h) + 16px);
+  max-height: calc(100vh - var(--nav-h) - 32px);
+  overflow: auto;
+}
+@media (max-width: 760px) {
+  .preview-col {
+    position: static;
+    max-height: none;
+  }
 }
