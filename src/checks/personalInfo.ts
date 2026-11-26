@@ -14,7 +14,7 @@ export interface PersonalInfoFindingIn extends PersonalInfoFinding {
 }
 
 const RULES: readonly (readonly [PersonalInfoId, readonly RegExp[]])[] = [
-  ["photo", [/\bphotos?\b/i, /\bphotographs?\b/i, /照片/]],
+  ["photo", [/\bphotos?\s*[:：]/i, /\bphotos?\s+(?:attached|enclosed)\b/i, /\bpassport[- ]size\s+photo/i, /\bphotographs?\b/i, /照片/]],
   [
     "age",
     [
