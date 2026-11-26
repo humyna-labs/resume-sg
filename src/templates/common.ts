@@ -9,8 +9,16 @@ export interface TemplateProps {
 
 /** Section names follow the resume's output language, not the UI language. */
 export const SECTION_NAMES = {
-  en: { summary: "Summary", experience: "Experience", education: "Education", skills: "Skills", certificates: "Certificates", languages: "Languages" },
-  zh: { summary: "个人简介", experience: "工作经历", education: "教育背景", skills: "专业技能", certificates: "证书", languages: "语言" },
+  en: {
+    summary: "Summary",
+    experience: "Experience",
+    projects: "Projects",
+    education: "Education",
+    skills: "Skills",
+    certificates: "Certificates",
+    languages: "Languages",
+  },
+  zh: { summary: "个人简介", experience: "工作经历", projects: "项目经历", education: "教育背景", skills: "专业技能", certificates: "证书", languages: "语言" },
 } as const;
 
 export const filled = (list: readonly string[]): string[] => list.filter((s) => s.trim() !== "");
@@ -38,19 +46,32 @@ export const contactOf = (resume: Resume): string[] => {
 export interface Sections {
   summary: boolean;
   experience: boolean;
+  projects: boolean;
   education: boolean;
   skills: boolean;
   certificates: boolean;
+  extras: boolean;
   languages: boolean;
 }
+
+const blank = (s: string): boolean => s.trim() === "";
+
+export const experienceIsEmpty = (e: Resume["experience"][number]): boolean =>
+  [e.company, e.title, e.location, e.start, e.end].every(blank) && filled(e.bullets).length === 0;
+export const projectIsEmpty = (p: Resume["projects"][number]): boolean =>
+  [p.name, p.role, p.org, p.start, p.end].every(blank) && filled(p.tech).length === 0 && filled(p.bullets).length === 0;
+export const educationIsEmpty = (e: Resume["education"][number]): boolean =>
+  [e.school, e.degree, e.start, e.end].every(blank) && filled(e.details).length === 0;
 
 export function sectionsOf(resume: Resume): Sections {
   return {
     summary: resume.summary.trim() !== "",
-    experience: resume.experience.length > 0,
-    education: resume.education.length > 0,
-    skills: resume.skills.some((g) => g.name.trim() !== "" || filled(g.items).length > 0),
+    experience: resume.experience.some((e) => !experienceIsEmpty(e)),
+    projects: resume.projects.some((p) => !projectIsEmpty(p)),
+    education: resume.education.some((e) => !educationIsEmpty(e)),
+    skills: resume.skills.some((g) => filled(g.items).length > 0 || g.name.trim() !== ""),
     certificates: filled(resume.certificates).length > 0,
+    extras: resume.extras.some((x) => filled(x.items).length > 0),
     languages: filled(resume.languages).length > 0,
   };
 }

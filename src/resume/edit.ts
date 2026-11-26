@@ -1,4 +1,4 @@
-import type { Education, Experience, Resume, SkillGroup } from "./model.ts";
+import type { Education, Experience, Extra, Project, Resume, SkillGroup } from "./model.ts";
 
 export type Dir = "up" | "down";
 
@@ -74,6 +74,60 @@ export function moveSkillGroup(r: Resume, id: string, dir: Dir): Resume {
 export function removeSkillGroup(r: Resume, id: string): Resume {
   return { ...r, skills: r.skills.filter((g) => g.id !== id) };
 }
+
+// projects by id
+export function addProject(r: Resume): Resume {
+  const p: Project = { id: nextId("proj", r.projects), name: "", role: "", org: "", start: "", end: "", tech: [], bullets: [] };
+  return { ...r, projects: [...r.projects, p] };
+}
+export function updateProject(r: Resume, id: string, patch: Partial<Omit<Project, "id">>): Resume {
+  return { ...r, projects: r.projects.map((p) => (p.id === id ? { ...p, ...patch } : p)) };
+}
+export function moveProject(r: Resume, id: string, dir: Dir): Resume {
+  return { ...r, projects: moved(r.projects, indexOfId(r.projects, id), dir) };
+}
+export function removeProject(r: Resume, id: string): Resume {
+  return { ...r, projects: r.projects.filter((p) => p.id !== id) };
+}
+const projectBullets = (r: Resume, id: string) => r.projects.find((p) => p.id === id)?.bullets ?? [];
+export const addProjectBullet = (r: Resume, id: string): Resume => updateProject(r, id, { bullets: [...projectBullets(r, id), ""] });
+export const updateProjectBullet = (r: Resume, id: string, i: number, v: string): Resume =>
+  updateProject(r, id, { bullets: replaced(projectBullets(r, id), i, v) });
+export const moveProjectBullet = (r: Resume, id: string, i: number, d: Dir): Resume =>
+  updateProject(r, id, { bullets: moved(projectBullets(r, id), i, d) });
+export const removeProjectBullet = (r: Resume, id: string, i: number): Resume =>
+  updateProject(r, id, { bullets: removed(projectBullets(r, id), i) });
+const projectTech = (r: Resume, id: string) => r.projects.find((p) => p.id === id)?.tech ?? [];
+export const addProjectTech = (r: Resume, id: string): Resume => updateProject(r, id, { tech: [...projectTech(r, id), ""] });
+export const updateProjectTech = (r: Resume, id: string, i: number, v: string): Resume =>
+  updateProject(r, id, { tech: replaced(projectTech(r, id), i, v) });
+export const moveProjectTech = (r: Resume, id: string, i: number, d: Dir): Resume =>
+  updateProject(r, id, { tech: moved(projectTech(r, id), i, d) });
+export const removeProjectTech = (r: Resume, id: string, i: number): Resume =>
+  updateProject(r, id, { tech: removed(projectTech(r, id), i) });
+
+// extras by id
+export function addExtra(r: Resume): Resume {
+  const x: Extra = { id: nextId("extra", r.extras), heading: "", items: [] };
+  return { ...r, extras: [...r.extras, x] };
+}
+export function updateExtra(r: Resume, id: string, patch: Partial<Omit<Extra, "id">>): Resume {
+  return { ...r, extras: r.extras.map((x) => (x.id === id ? { ...x, ...patch } : x)) };
+}
+export function moveExtra(r: Resume, id: string, dir: Dir): Resume {
+  return { ...r, extras: moved(r.extras, indexOfId(r.extras, id), dir) };
+}
+export function removeExtra(r: Resume, id: string): Resume {
+  return { ...r, extras: r.extras.filter((x) => x.id !== id) };
+}
+const extraItems = (r: Resume, id: string) => r.extras.find((x) => x.id === id)?.items ?? [];
+export const addExtraItem = (r: Resume, id: string): Resume => updateExtra(r, id, { items: [...extraItems(r, id), ""] });
+export const updateExtraItem = (r: Resume, id: string, i: number, v: string): Resume =>
+  updateExtra(r, id, { items: replaced(extraItems(r, id), i, v) });
+export const moveExtraItem = (r: Resume, id: string, i: number, d: Dir): Resume =>
+  updateExtra(r, id, { items: moved(extraItems(r, id), i, d) });
+export const removeExtraItem = (r: Resume, id: string, i: number): Resume =>
+  updateExtra(r, id, { items: removed(extraItems(r, id), i) });
 
 // string lists by index
 type ListKey = "certificates" | "languages";
