@@ -30,10 +30,9 @@ export function Layout({ children }: { children: ReactNode }) {
           <button
             type="button"
             className="lang-switch"
-            aria-label={t("nav.switchLabel")}
             onClick={() => setLang(lang === "zh" ? "en" : "zh")}
           >
-            {t("nav.switch")}
+            <span lang={lang === "zh" ? "en" : "zh-CN"}>{t("nav.switch")}</span>
           </button>
         </nav>
       </header>

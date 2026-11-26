@@ -3,16 +3,12 @@
 *::after {
   box-sizing: border-box;
 }
-html {
-  overflow-x: hidden;
-}
 body {
   margin: 0;
   font-family: var(--font-stack);
   color: var(--color-text);
   background: var(--color-bg);
   line-height: 1.5;
-  overflow-x: hidden;
 }
 .shell {
   min-height: 100vh;
