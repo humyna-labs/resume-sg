@@ -1,20 +1,56 @@
 :root {
-  --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-  --color-bg: #ffffff;
-  --color-surface: #f3f4f6;
-  --color-text: #1c1c21;
-  --color-muted: #666b75;
-  --color-border: #d4d6dc;
-  --color-accent: #0a5fd0;
-  --color-accent-text: #ffffff;
-  --radius-sm: 8px;
-  --radius-md: 14px;
-  --radius-pill: 999px;
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 16px;
-  --space-4: 24px;
-  --space-5: 40px;
-  --space-6: 64px;
+  --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+
+  /* colours */
+  --bg: #fff;
+  --alt: #f5f5f7;
+  --text: #1d1d1f;
+  --text-2: #424245;
+  --muted: #6e6e73;
+  --line: rgba(0, 0, 0, 0.08);
+  --accent: #0a5cd8;
+  --accent-weak: #e8f0fd;
+  --accent-ring: rgba(10, 92, 216, 0.2);
+  --accent-glow: rgba(10, 92, 216, 0.3);
+  --ok: #1a7f37;
+  --ok-weak: #e7f5ec;
+  --warn: #c4320a;
+  --warn-weak: #fdecea;
+  --mark: #fff3c4;
+  --input-line: #d2d2d7;
+  --nav-bg: rgba(255, 255, 255, 0.82);
+
+  /* radius */
+  --r-lg: 22px;
+  --r-md: 14px;
+  --r-pill: 999px;
+  --r-input: 12px;
+
+  /* shadow */
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 28px rgba(0, 0, 0, 0.06);
+
+  /* type */
+  --fs-h1: 68px;
+  --fs-h1-phone: 40px;
+  --fs-h2: 44px;
+  --fs-h2-phone: 30px;
+  --fs-band: 40px;
+  --fs-band-phone: 28px;
+  --fs-lead: 19px;
+  --fs-lead-phone: 16px;
+  --fs-sub: 21px;
+  --fs-sub-phone: 17px;
+
+  /* layout */
+  --wrap: 1080px;
+  --gutter: 24px;
+  --section-y: 88px;
+  --section-y-phone: 56px;
+  --nav-h: 56px;
+  --input-h: 44px;
+  --btn-sm: 32px;
+  --btn-lg: 50px;
+
+  /* motion: opacity and transform only */
   --transition: 0.2s ease;
 }

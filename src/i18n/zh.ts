@@ -1,6 +1,6 @@
-import type { Dict } from "./en.ts";
+import type { Dict, Rich } from "./en.ts";
 
-const zh: Dict = {
+const zhStrings: Omit<Dict, "rich"> = {
   "nav.logo": "JD2CV",
   "nav.label": "主导航",
   "nav.start": "开始定制",
@@ -12,17 +12,38 @@ const zh: Dict = {
   "footer.privacy": "隐私",
   "footer.licence": "MIT 许可证",
   "footer.source": "源代码",
-  "home.intro": "免费 · 无需注册 · 不存你的任何数据。",
-  "home.title": "让简历贴合每一个岗位",
-  "home.lead": "粘贴职位描述，AI 帮你把简历改成这个岗位要的样子。",
-  "home.cta": "开始定制",
-  "home.value1": "免费",
-  "home.value2": "无需注册，不存数据",
-  "home.value3": "绝不编造事实",
-  "home.stepsLabel": "三个步骤",
-  "home.step1": "粘贴你的简历",
-  "home.step2": "粘贴职位描述",
-  "home.step3": "核对并导出",
+  "nav.menu": "菜单",
+  "footer.contact": "联系我们",
+  "footer.line": "JD2CV · 独立开源项目",
+  "home.eyebrow.1": "免费",
+  "home.eyebrow.2": "无需注册",
+  "home.eyebrow.3": "不存你的任何数据",
+  "home.sub": "粘贴职位描述，AI 帮你把简历改成这个岗位要的样子：1 到 2 页，中文或英文，不编造任何经历。",
+  "home.how": "了解工作原理 ›",
+  "home.jdTag": "职位描述",
+  "home.jdTitle": "高级后端工程师 · 支付平台",
+  "home.arrow": "AI →",
+  "home.cvTag": "定制后的简历",
+  "home.cvTitle": "林嘉明 · 高级后端工程师",
+  "home.badge": "公司、日期、数字已逐项核对",
+  "home.note": "原简历里没有的内容会标红，处理之前不能导出。",
+  "home.reasons.title": "放心用，是因为这三点",
+  "home.reasons.lead": "不注册、不收费、不存数据，AI 也不替你编造经历。",
+  "home.reason.1.title": "完全免费",
+  "home.reason.1.body": "没有付费功能，没有广告，也不用注册。AI 用你自己的 Anthropic key，按实际用量向 Anthropic 付费。",
+  "home.reason.2.title": "数据安全",
+  "home.reason.2.body": "我们没有服务器，不存任何数据。key 默认只在当前页面的内存里，只发给 Anthropic。",
+  "home.reason.3.title": "绝不编造",
+  "home.reason.3.body": "AI 只改写、调整顺序、合并和翻译。公司、职位、日期、学历和数字由程序逐项核对。",
+  "home.steps.title": "三步完成",
+  "home.steps.lead": "每个岗位一份简历，几分钟就够。",
+  "home.step.1.title": "放入原简历",
+  "home.step.1.body": "粘贴原简历的文字让 AI 整理，或者逐项填写。",
+  "home.step.2.title": "粘贴职位描述",
+  "home.step.2.body": "选择中文或英文，以及定制方式：均衡、突出成果或转行。",
+  "home.step.3.title": "核对并导出",
+  "home.step.3.body": "看改动清单和标红项，选模板，导出 PDF 或 Markdown。",
+  "home.band": "为下一个岗位，准备一份对的简历。",
   "page.app": "定制你的简历",
   "page.how": "工作原理",
   "page.faq": "常见问题",
@@ -110,5 +131,21 @@ const zh: Dict = {
   "privacy.4.link": "“联系我们”页面上的邮箱地址",
   "privacy.4.after": "。",
 };
+
+const rich: Rich = {
+  "home.h1": ["简历，", { span: "对准这个岗位。" }],
+  "home.jd": [
+    ["负责", { mark: "支付清算" }, "核心系统的设计与演进"],
+    ["有", { mark: "高并发" }, "交易系统经验，熟悉 ", { mark: "Kafka" }],
+    ["能带领小团队，推动工程质量"],
+  ],
+  "home.cv": [
+    ["主导", { b: "清算服务" }, "重构，日终批处理从 4 小时缩短到 35 分钟"],
+    ["幂等支付接口峰值每秒 1,200 笔交易"],
+    ["14 个服务迁移到 ", { b: "Kafka" }, " 事件架构，零停机"],
+  ],
+};
+
+const zh: Dict = { ...zhStrings, rich };
 
 export default zh;

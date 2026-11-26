@@ -1,4 +1,4 @@
-const en = {
+const strings = {
   "nav.logo": "JD2CV",
   "nav.label": "Main",
   "nav.start": "Start",
@@ -10,17 +10,38 @@ const en = {
   "footer.privacy": "Privacy",
   "footer.licence": "MIT licence",
   "footer.source": "Source code",
-  "home.intro": "Free. No sign-up. We store nothing.",
-  "home.title": "Your resume, tailored to the job",
-  "home.lead": "Paste a job description and AI tailors your resume to it.",
-  "home.cta": "Start tailoring",
-  "home.value1": "Free",
-  "home.value2": "No sign-up, we store nothing",
-  "home.value3": "Never invents facts",
-  "home.stepsLabel": "Three steps",
-  "home.step1": "Paste your resume",
-  "home.step2": "Paste the job description",
-  "home.step3": "Check and export",
+  "nav.menu": "Menu",
+  "footer.contact": "Contact",
+  "footer.line": "JD2CV · an independent open-source project",
+  "home.eyebrow.1": "Free",
+  "home.eyebrow.2": "No sign-up",
+  "home.eyebrow.3": "We store nothing",
+  "home.sub": "Paste a job description and AI tailors your resume to it: one or two pages, in English or Chinese, with nothing made up.",
+  "home.how": "How it works ›",
+  "home.jdTag": "Job description",
+  "home.jdTitle": "Senior Backend Engineer · Payments",
+  "home.arrow": "AI →",
+  "home.cvTag": "Tailored resume",
+  "home.cvTitle": "Jamie Lin · Senior Backend Engineer",
+  "home.badge": "Employers, dates and numbers checked",
+  "home.note": "Anything not in your original is highlighted, and export waits until you deal with it.",
+  "home.reasons.title": "Three reasons you can trust it",
+  "home.reasons.lead": "No account, no fee, no stored data, and the AI never invents your experience.",
+  "home.reason.1.title": "Free",
+  "home.reason.1.body": "No paid features, no ads, no sign-up. The AI runs on your own Anthropic key; you pay Anthropic only for what you use.",
+  "home.reason.2.title": "Your data stays yours",
+  "home.reason.2.body": "We have no server and store nothing. Your key lives in this page's memory by default and goes only to Anthropic.",
+  "home.reason.3.title": "Never invents facts",
+  "home.reason.3.body": "The AI only rephrases, reorders, merges and translates. Employers, titles, dates, degrees and numbers are checked by code.",
+  "home.steps.title": "Three steps",
+  "home.steps.lead": "One resume per job, in a few minutes.",
+  "home.step.1.title": "Add your resume",
+  "home.step.1.body": "Paste your resume text for the AI to organise, or fill in the form.",
+  "home.step.2.title": "Paste the job description",
+  "home.step.2.body": "Pick English or Chinese and a mode: Balanced, Results-first or Career switch.",
+  "home.step.3.title": "Check and export",
+  "home.step.3.body": "Review what changed and anything in red, pick a template, export PDF or Markdown.",
+  "home.band": "Get the right resume for your next job.",
   "page.app": "Tailor your resume",
   "page.how": "How it works",
   "page.faq": "FAQ",
@@ -109,5 +130,30 @@ const en = {
   "privacy.4.after": ".",
 } as const;
 
-export type Dict = Record<keyof typeof en, string>;
-export default en as Dict;
+/** Rich text as structured data: plain strings plus marked parts, built into React elements by RichText. */
+export type RichPart = string | { span: string } | { mark: string } | { b: string };
+export type RichLine = readonly RichPart[];
+export interface Rich {
+  "home.h1": RichLine;
+  "home.jd": readonly RichLine[];
+  "home.cv": readonly RichLine[];
+}
+export type StrKey = keyof typeof strings;
+export type Dict = Record<StrKey, string> & { rich: Rich };
+
+const rich: Rich = {
+  "home.h1": ["Your resume, ", { span: "aimed at this job." }],
+  "home.jd": [
+    ["Own the design of the core ", { mark: "settlement" }, " platform"],
+    ["Experience with ", { mark: "high-throughput" }, " systems and ", { mark: "Kafka" }],
+    ["Lead a small team and raise engineering quality"],
+  ],
+  "home.cv": [
+    ["Led the ", { b: "settlement service" }, " redesign; end-of-day batch from 4 hours to 35 minutes"],
+    ["Idempotent payment API handling 1,200 transactions per second at peak"],
+    ["Moved 14 services to ", { b: "Kafka" }, " events with zero downtime"],
+  ],
+};
+
+const en: Dict = { ...strings, rich };
+export default en;

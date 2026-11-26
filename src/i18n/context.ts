@@ -1,7 +1,7 @@
 import { createContext, useContext } from "react";
 import en from "./en.ts";
 import zh from "./zh.ts";
-import type { Dict } from "./en.ts";
+import type { Dict, Rich, StrKey } from "./en.ts";
 
 export type Lang = "en" | "zh";
 
@@ -18,9 +18,14 @@ export function useLang(): LangState {
   return useContext(LangContext);
 }
 
-export function useT(): (key: keyof Dict) => string {
+export function useT(): (key: StrKey) => string {
   const { lang } = useLang();
   return (key) => dictionaries[lang][key];
+}
+
+export function useRich(): Rich {
+  const { lang } = useLang();
+  return dictionaries[lang].rich;
 }
 
 export function detectLang(): Lang {

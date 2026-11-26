@@ -1,11 +1,8 @@
-import type { Dict } from "../i18n/en.ts";
+import { PageShell } from "../app/PageShell.tsx";
+import type { StrKey } from "../i18n/en.ts";
 import { useT } from "../i18n/index.ts";
 
-export function Placeholder({ titleKey }: { titleKey: keyof Dict }) {
+export function Placeholder({ titleKey }: { titleKey: StrKey }) {
   const t = useT();
-  return (
-    <section className="page">
-      <h1>{t(titleKey)}</h1>
-    </section>
-  );
+  return <PageShell title={t(titleKey)} />;
 }
