@@ -64,8 +64,8 @@ for (const lang of LANGS) {
       await expect(h.getByRole("link", { name: n.start, exact: true })).toBeVisible();
       await expect(h.locator("button", { hasText: n.langText })).toBeVisible();
       await expect(h.getByRole("button", { name: n.menu })).toBeHidden();
-      if (lang === "zh") await expect(page.getByText("对岗简历")).toBeVisible();
-      else await expect(page.getByText("对岗简历")).toHaveCount(0);
+      // ui-polish (#42, owner 2026-11-27): no zh sub-label next to the logo in either language
+      await expect(page.getByText("对岗简历")).toHaveCount(0);
 
       // wordmark: JD2CV with the "2" in the accent colour
       await expect(h.getByRole("link", { name: /^JD2CV/ })).toBeVisible();

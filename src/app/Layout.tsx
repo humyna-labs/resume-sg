@@ -4,7 +4,6 @@ import { useLang, useT } from "../i18n/index.ts";
 import { MenuIcon } from "../icons/index.tsx";
 
 const REPO = "https://github.com/humyna-labs/resume-sg";
-const BRAND_SUB = { zh: "对岗简历" } as const;
 
 export function Layout({ children }: { children: ReactNode }) {
   const t = useT();
@@ -41,7 +40,6 @@ export function Layout({ children }: { children: ReactNode }) {
             <span>
               JD<b>2</b>CV
             </span>
-            {lang === "zh" ? <small>{BRAND_SUB.zh}</small> : null}
           </a>
           <nav className="links" aria-label={t("nav.label")}>
             {links.map(([href, label]) => (
