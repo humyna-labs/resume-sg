@@ -1,0 +1,32 @@
+const en = {
+  "nav.logo": "JD2CV",
+  "nav.label": "Main",
+  "nav.start": "Start",
+  "nav.how": "How it works",
+  "nav.faq": "FAQ",
+  "nav.contact": "Contact",
+  "nav.switch": "中文",
+  "nav.switchLabel": "Switch to Chinese",
+  "footer.privacy": "Privacy",
+  "footer.licence": "MIT licence",
+  "footer.source": "Source code",
+  "home.intro": "Free. No sign-up. We store nothing.",
+  "home.title": "Your resume, tailored to the job",
+  "home.lead": "Paste a job description and AI tailors your resume to it.",
+  "home.cta": "Start tailoring",
+  "home.value1": "Free",
+  "home.value2": "No sign-up, we store nothing",
+  "home.value3": "Never invents facts",
+  "home.stepsLabel": "Three steps",
+  "home.step1": "Paste your resume",
+  "home.step2": "Paste the job description",
+  "home.step3": "Check and export",
+  "page.app": "Tailor your resume",
+  "page.how": "How it works",
+  "page.faq": "Frequently asked questions",
+  "page.contact": "Contact us",
+  "page.privacy": "Privacy",
+} as const;
+
+export type Dict = Record<keyof typeof en, string>;
+export default en as Dict;
