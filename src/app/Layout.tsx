@@ -85,8 +85,14 @@ export function Layout({ children }: { children: ReactNode }) {
       <footer className="footer">
         <div className="wrap">
           <span>{t("footer.line")}</span>
+          <p className="footer-agree">
+            {t("dis.footer.before")}
+            <a href="#/disclaimer">{t("dis.link")}</a>
+            {t("dis.footer.after")}
+          </p>
           <nav aria-label={t("footer.privacy")}>
             <a href="#/privacy">{t("footer.privacy")}</a>
+            <a href="#/disclaimer">{t("dis.link")}</a>
             <span>{t("footer.licence")}</span>
             <a href={REPO} rel="noopener noreferrer">
               {t("footer.source")}

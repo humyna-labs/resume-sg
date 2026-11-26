@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { AiConsentLine } from "../../app/AiConsentLine.tsx";
 import { AiError, callAnthropic } from "../../ai/anthropic.ts";
 import { DEFAULT_MODEL, isValidModel } from "../../ai/settings.ts";
 import type { StrKey } from "../../i18n/en.ts";
@@ -148,6 +149,7 @@ export function AiSettings() {
           {result ? t(result) : null}
         </p>
       </div>
+      <AiConsentLine />
     </section>
   );
 }
