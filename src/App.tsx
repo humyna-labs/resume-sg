@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Layout } from "./app/Layout.tsx";
 import { useRoute } from "./app/route.ts";
-import { LangContext, detectLang } from "./i18n/index.ts";
+import { LangContext, detectLang, dictionaries } from "./i18n/index.ts";
 import type { Lang } from "./i18n/index.ts";
 import { Home } from "./pages/Home.tsx";
 import { Contact } from "./pages/Contact.tsx";
@@ -21,7 +21,15 @@ export function App() {
 
   useEffect(() => {
     document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
-    document.title = "JD2CV";
+    const zh = lang === "zh";
+    document.title = zh ? "JD2CV · 对岗简历" : "JD2CV";
+    let meta = document.head.querySelector<HTMLMetaElement>('meta[name="description"]');
+    if (!meta) {
+      meta = document.createElement("meta");
+      meta.name = "description";
+      document.head.appendChild(meta);
+    }
+    meta.content = `${zh ? "JD2CV · 对岗简历：" : "JD2CV: "}${dictionaries[lang]["home.sub"]}`;
   }, [lang]);
 
   let page;
