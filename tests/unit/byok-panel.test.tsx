@@ -22,7 +22,8 @@ const T = {
     remember: "Remember on this device",
     warn: "Anyone who can use this browser can use your key. Use a separate key with a spending limit.",
     test: "Test connection",
-    model: /model/i,
+    modelId: "Model ID",
+    other: "Other (custom)",
     show: /show/i,
     hide: /hide/i,
     help: "No key yet? Get one in 3 steps",
@@ -49,7 +50,8 @@ const T = {
     remember: "在这台设备上记住",
     warn: "能使用这个浏览器的人都能使用你的 key。建议单独建一个 key 并设置用量上限。",
     test: "测试连接",
-    model: /模型|model/i,
+    modelId: "模型 ID",
+    other: "其他（自定义）",
     show: /显示|show/i,
     hide: /隐藏|hide/i,
     help: "还没有 key？3 步获取",
@@ -81,7 +83,14 @@ function setup(lang: L, hash = "#/app") {
 const main = () => screen.getByRole("main");
 const mainText = () => norm(main().textContent ?? "");
 const keyInput = (lang: L) => within(main()).getByLabelText(T[lang].keyLabel) as HTMLInputElement;
-const modelInput = (lang: L) => within(main()).getByLabelText(T[lang].model) as HTMLInputElement;
+const panel = (lang: L) => within(screen.getByRole("region", { name: lang === "en" ? "AI settings" : "AI 设置" }));
+const modelSelect = (lang: L) => panel(lang).getByRole("combobox", { name: lang === "en" ? "Model" : "模型" }) as HTMLSelectElement;
+const chooseOther = (lang: L) => {
+  const opt = Array.from(modelSelect(lang).options).find((o) => norm(o.textContent ?? "") === norm(T[lang].other));
+  expect(opt, "Other (custom) option").toBeTruthy();
+  fireEvent.change(modelSelect(lang), { target: { value: opt?.value } });
+};
+const modelInput = (lang: L) => panel(lang).getByLabelText(T[lang].modelId) as HTMLInputElement;
 const rememberBox = (lang: L) => within(main()).getByLabelText(T[lang].remember) as HTMLInputElement;
 const testBtn = (lang: L) => within(main()).getByRole("button", { name: T[lang].test }) as HTMLButtonElement;
 const typeKey = (lang: L, v = KEY) => fireEvent.change(keyInput(lang), { target: { value: v } });
@@ -276,6 +285,7 @@ for (const lang of ["en", "zh"] as const) {
 
     it(`criterion 6: model id defaults to claude-sonnet-5-5`, () => {
       setup(lang);
+      chooseOther(lang);
       expect(modelInput(lang).value).toBe("claude-sonnet-5-5");
     });
 
@@ -287,6 +297,7 @@ for (const lang of ["en", "zh"] as const) {
         setup(lang);
         typeKey(lang);
         expect(testBtn(lang).disabled).toBe(false);
+        chooseOther(lang);
         fireEvent.change(modelInput(lang), { target: { value: id } });
         expect(testBtn(lang).disabled).toBe(true);
         const flagged =
@@ -304,6 +315,7 @@ for (const lang of ["en", "zh"] as const) {
         vi.stubGlobal("fetch", f);
         setup(lang);
         typeKey(lang);
+        chooseOther(lang);
         fireEvent.change(modelInput(lang), { target: { value: id } });
         expect(testBtn(lang).disabled).toBe(false);
         expect(main().querySelector("[role=alert]")).toBeNull();
@@ -316,7 +328,8 @@ for (const lang of ["en", "zh"] as const) {
 
     it(`criterion 10: the panel controls are keyboard reachable`, () => {
       setup(lang);
-      for (const el of [keyInput(lang), modelInput(lang), rememberBox(lang), testBtn(lang)]) {
+      chooseOther(lang);
+      for (const el of [keyInput(lang), modelSelect(lang), modelInput(lang), rememberBox(lang), testBtn(lang)]) {
         expect(el.getAttribute("tabindex")).not.toBe("-1");
       }
       expect(main().querySelectorAll("[tabindex='-1']").length).toBe(0);

@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { AiConsentLine } from "../../app/AiConsentLine.tsx";
 import { AiError, callAnthropic } from "../../ai/anthropic.ts";
-import { DEFAULT_MODEL, isValidModel } from "../../ai/settings.ts";
+import { CUSTOM_CHOICE, DEFAULT_MODEL, MODEL_CHOICES, isValidModel } from "../../ai/settings.ts";
 import type { StrKey } from "../../i18n/en.ts";
 import { useT } from "../../i18n/index.ts";
 import { getKey, isRemembered, setKey } from "../../security/keyStore.ts";
@@ -14,12 +14,15 @@ export function AiSettings() {
   const [remember, setRemember] = useState(isRemembered);
   const [shown, setShown] = useState(false);
   const [helpOpen, setHelpOpen] = useState(() => getKey() === "");
-  const [model, setModel] = useState(DEFAULT_MODEL);
+  const [choice, setChoice] = useState<string>(DEFAULT_MODEL);
+  const [custom, setCustom] = useState<string>(DEFAULT_MODEL);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<StrKey | null>(null);
   const running = useRef(false);
 
-  const modelOk = isValidModel(model);
+  const isCustom = choice === CUSTOM_CHOICE;
+  const model = isCustom ? custom : choice;
+  const modelOk = isCustom ? isValidModel(custom) : true;
 
   function onKey(value: string) {
     setKeyState(value);
@@ -121,25 +124,48 @@ export function AiSettings() {
       </div>
 
       <div className="field">
-        <label htmlFor="ai-model">{t("ai.modelLabel")}</label>
-        <input
-          id="ai-model"
+        <label htmlFor="ai-model-select">{t("ai.modelSelect")}</label>
+        <select
+          id="ai-model-select"
           className="input"
-          type="text"
-          autoComplete="off"
-          autoCapitalize="off"
-          spellCheck={false}
-          value={model}
-          aria-invalid={modelOk ? undefined : true}
-          aria-describedby={modelOk ? undefined : "ai-model-error"}
-          onChange={(e) => setModel(e.target.value)}
-        />
-        {modelOk ? null : (
-          <p id="ai-model-error" className="field-error" role="alert">
-            {t("ai.modelInvalid")}
-          </p>
-        )}
+          value={choice}
+          aria-describedby="ai-model-help"
+          onChange={(e) => setChoice(e.target.value)}
+        >
+          {MODEL_CHOICES.map((m) => (
+            <option key={m.value} value={m.value}>
+              {t(m.labelKey)}
+            </option>
+          ))}
+          <option value={CUSTOM_CHOICE}>{t("ai.model.other")}</option>
+        </select>
+        <p id="ai-model-help" className="field-hint">
+          {t("ai.modelHelp")}
+        </p>
       </div>
+
+      {isCustom ? (
+        <div className="field">
+          <label htmlFor="ai-model">{t("ai.modelLabel")}</label>
+          <input
+            id="ai-model"
+            className="input"
+            type="text"
+            autoComplete="off"
+            autoCapitalize="off"
+            spellCheck={false}
+            value={custom}
+            aria-invalid={modelOk ? undefined : true}
+            aria-describedby={modelOk ? undefined : "ai-model-error"}
+            onChange={(e) => setCustom(e.target.value)}
+          />
+          {modelOk ? null : (
+            <p id="ai-model-error" className="field-error" role="alert">
+              {t("ai.modelInvalid")}
+            </p>
+          )}
+        </div>
+      ) : null}
 
       <div className="test-row">
         <button type="button" className="btn btn-sm btn-primary" disabled={busy || key === "" || !modelOk} onClick={() => void onTest()}>
