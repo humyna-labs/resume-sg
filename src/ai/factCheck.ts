@@ -28,13 +28,16 @@ function zhRunValue(run: string): number | null {
   return (m[1] ? (ZH_DIGITS[m[1]] ?? 0) : 1) * 10 + (m[2] ? (ZH_DIGITS[m[2]] ?? 0) : 0);
 }
 
+// Number units compare by value: 18 万 = 180,000 = 180k.
+const UNITS: Record<string, number> = { 万: 1e4, 千: 1e3, 亿: 1e8, k: 1e3, m: 1e6, b: 1e9 };
+
 function extractNumbers(text: string): NumToken[] {
   const out: NumToken[] = [];
   const digits = /(S\$|US\$|[$¥￥€£])?(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)(\s?[万千亿]|[kKmMbB](?![A-Za-z]))?(%)?/g;
   for (const m of text.matchAll(digits)) {
     const n = Number((m[2] ?? "").replace(/,/g, ""));
-    const suffix = (m[3] ?? "").replace(/\s/g, "").toLowerCase();
-    out.push({ raw: m[0], value: `${n}${suffix}` });
+    const unit = (m[3] ?? "").replace(/\s/g, "").toLowerCase();
+    out.push({ raw: m[0], value: String(Math.round(n * (UNITS[unit] ?? 1) * 1e6) / 1e6) });
   }
   for (const m of text.matchAll(/\b(one|two|three|four|five|six|seven|eight|nine|ten)\b/gi)) {
     out.push({ raw: m[0], value: String(EN_WORDS[m[0].toLowerCase()]) });
@@ -148,6 +151,25 @@ function occurs(haystack: string, item: string): boolean {
   return new RegExp(`${pre}${escapeRe(it)}${post}`, "i").test(haystack);
 }
 
+/** Language names that mean the same language in Chinese and English (owner map, resume-sg#38). */
+export const LANGUAGE_NAMES: readonly (readonly string[])[] = [
+  ["英语", "English"],
+  ["普通话", "中文", "汉语", "Mandarin", "Chinese"],
+  ["粤语", "Cantonese"],
+  ["马来语", "Malay"],
+  ["泰米尔语", "Tamil"],
+  ["印尼语", "Indonesian"],
+  ["日语", "Japanese"],
+  ["韩语", "Korean"],
+  ["法语", "French"],
+  ["德语", "German"],
+  ["西班牙语", "Spanish"],
+  ["越南语", "Vietnamese"],
+  ["泰语", "Thai"],
+];
+
+const stripProficiency = (s: string): string => normalise(s.replace(/\s*[(（][^)）]*[)）]/g, ""));
+
 export const NAME_CHECK_TEXT = "请核对姓名拼写 / Check the name spelling";
 
 // ---------------------------------------------------------------- checker
@@ -163,7 +185,9 @@ export function factCheck(original: string, out: TailorOutput, opts?: { outputLa
 
   const norm = normalise(original);
   const lower = norm.toLowerCase();
-  const cross = opts?.outputLang !== undefined && opts.outputLang !== detectLang(original);
+  const src = detectLang(original);
+  const cross = opts?.outputLang !== undefined && opts.outputLang !== src;
+  const zhToEn = cross && src === "zh";
   const r = out.resume;
   const goodSources: string[] = [];
   const badSources: string[] = [];
@@ -182,11 +206,12 @@ export function factCheck(original: string, out: TailorOutput, opts?: { outputLa
 
   /** (c): each fact must occur in the entry's source, which must itself have passed (a). */
   const checkFacts = (where: string, sourceOk: boolean, source: string, facts: [string, string][]): void => {
+    if (zhToEn) return; // zh original, en output: these fields are not checked against the original.
     if (cross) {
       // Cross language: only Latin-script tokens (brand names) must occur in the original.
       for (const [field, value] of facts) {
         for (const m of value.matchAll(/[A-Za-z][A-Za-z0-9]+/g)) {
-          if (!lower.includes(m[0].toLowerCase())) add("red", "unsourced", field ? `${where}.${field}` : where, m[0]);
+          if (!occurs(norm, m[0])) add("red", "unsourced", field ? `${where}.${field}` : where, m[0]);
         }
       }
       return;
@@ -281,11 +306,20 @@ export function factCheck(original: string, out: TailorOutput, opts?: { outputLa
   // Items: skills, project tech, languages.
   const checkItem = (where: string, item: string): void => {
     if (normalise(item) === "" || occurs(norm, item)) return;
-    add(!cross || isLatinItem(item) ? "red" : "amber", "item", where, item);
+    const red = !cross || (zhToEn ? /[A-Za-z]/.test(item) && !/\s/.test(normalise(item)) : isLatinItem(item));
+    add(red ? "red" : "amber", "item", where, item);
+  };
+  const checkLanguage = (where: string, item: string): void => {
+    if (!cross) return checkItem(where, item);
+    const name = stripProficiency(item).toLowerCase();
+    const group = LANGUAGE_NAMES.find((g) => g.some((n) => n.toLowerCase() === name));
+    if (!group) return checkItem(where, item);
+    const found = group.some((n) => (/[A-Za-z]/.test(n) ? occurs(norm, n) : norm.includes(n)));
+    if (!found) add("red", "item", where, item);
   };
   r.skills.forEach((s, i) => s.items.forEach((it, j) => checkItem(`skills[${i}].items[${j}]`, it)));
   r.projects.forEach((p, i) => p.tech.forEach((it, j) => checkItem(`projects[${i}].tech[${j}]`, it)));
-  r.languages.forEach((it, i) => checkItem(`languages[${i}]`, it));
+  r.languages.forEach((it, i) => checkLanguage(`languages[${i}]`, it));
 
   // (b) summary: numbers may come from anywhere in the original.
   checkNumbers("summary", r.summary, original);
