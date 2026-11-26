@@ -249,10 +249,10 @@ describe("criterion 5: word boundaries", () => {
     expect(kind(factCheck("Skills: Go, Java", mk(["Go", "go"])), "item")).toEqual([]);
   });
   it("the #36 Latin-token check (en original, zh output) matches whole words", () => {
-    const entry = (company: string): TailorOutput => {
+    const entry = (company: string, source = "Engineer, Google, 2020 - 2021"): TailorOutput => {
       const r = emptySourced();
       r.experience = [
-        { id: "e1", company, title: "工程师", location: "", start: "2020", end: "2021", source: "Engineer, Google, 2020 - 2021", bullets: [] },
+        { id: "e1", company, title: "工程师", location: "", start: "2020", end: "2021", source, bullets: [] },
       ];
       return { resume: r, changes: [], notIncluded: [] };
     };
@@ -260,7 +260,7 @@ describe("criterion 5: word boundaries", () => {
     const bad = red(factCheck(o, entry("Go 科技"), { outputLang: "zh" }));
     expect(bad.map((x) => [x.kind, x.value])).toEqual([["unsourced", "Go"]]);
     expect(red(factCheck(o, entry("Google 科技"), { outputLang: "zh" }))).toEqual([]);
-    expect(red(factCheck("Engineer, Go, Java, 2020 - 2021", { ...entry("go 科技"), }, { outputLang: "zh" })).filter((x) => x.kind === "unsourced")).toEqual([]);
+    expect(red(factCheck("Engineer, Go, Java, 2020 - 2021", entry("go 科技", "Engineer, Go, Java, 2020 - 2021"), { outputLang: "zh" })).filter((x) => x.kind === "unsourced")).toEqual([]);
   });
 });
 
