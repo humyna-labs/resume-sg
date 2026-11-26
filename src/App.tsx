@@ -47,6 +47,9 @@ export function App() {
     case "templates":
       page = <Templates />;
       break;
+    case "sections":
+      page = <Templates heavy />;
+      break;
     default:
       page = <Home />;
   }

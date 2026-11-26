@@ -1,3 +1,4 @@
+import { DEFAULT_ORDER } from "./model.ts";
 import type { Resume } from "./model.ts";
 
 /** Synthetic person used by the "Load example" button and by tests. */
@@ -56,5 +57,8 @@ export function sampleResume(): Resume {
       { id: "skill-2", name: "Software", items: ["Power BI", "Jira"] },
     ],
     languages: ["English (fluent)", "Mandarin (fluent)"],
+    projects: [],
+    extras: [],
+    order: [...DEFAULT_ORDER],
   };
 }

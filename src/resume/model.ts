@@ -28,6 +28,24 @@ export interface SkillGroup {
   name: string;
   items: string[];
 }
+export interface Project {
+  id: string;
+  name: string;
+  role: string;
+  org: string;
+  start: string;
+  end: string;
+  tech: string[];
+  bullets: string[];
+  /** The experience entry this project is nested under; absent or "" means the Projects section. */
+  experienceId?: string | undefined;
+}
+export interface Extra {
+  id: string;
+  heading: string;
+  items: string[];
+}
+export type SectionId = "summary" | "experience" | "projects" | "education" | "skills" | "certificates" | "extras" | "languages";
 export interface Resume {
   basics: Basics;
   summary: string;
@@ -36,7 +54,21 @@ export interface Resume {
   certificates: string[];
   skills: SkillGroup[];
   languages: string[];
+  projects: Project[];
+  extras: Extra[];
+  order: SectionId[];
 }
+
+export const DEFAULT_ORDER: readonly SectionId[] = [
+  "summary",
+  "experience",
+  "projects",
+  "education",
+  "skills",
+  "certificates",
+  "extras",
+  "languages",
+];
 
 export function emptyResume(): Resume {
   return {
@@ -47,5 +79,8 @@ export function emptyResume(): Resume {
     certificates: [],
     skills: [],
     languages: [],
+    projects: [],
+    extras: [],
+    order: [...DEFAULT_ORDER],
   };
 }

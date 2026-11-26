@@ -4,11 +4,12 @@ import { TemplateSwitch } from "../features/templates/TemplateSwitch.tsx";
 import { TemplateView } from "../features/templates/TemplateView.tsx";
 import { useLang, useT } from "../i18n/index.ts";
 import type { Lang } from "../i18n/index.ts";
+import { heavySample } from "../templates/heavySample.ts";
 import { DEFAULT_TEMPLATE, referenceSample } from "../templates/index.ts";
 import type { TemplateId } from "../templates/index.ts";
 
 /** The two templates with the made-up reference person, in a chosen output language. */
-export function Templates() {
+export function Templates({ heavy = false }: { heavy?: boolean } = {}) {
   const t = useT();
   const { lang: uiLang } = useLang();
   const [tpl, setTpl] = useState<TemplateId>(DEFAULT_TEMPLATE);
@@ -43,7 +44,7 @@ export function Templates() {
         </div>
       </div>
       <div className="tpl-stage">
-        <TemplateView id={tpl} resume={referenceSample(lang)} lang={lang} />
+        <TemplateView id={tpl} resume={heavy ? heavySample(lang) : referenceSample(lang)} lang={lang} />
       </div>
     </PageShell>
   );
