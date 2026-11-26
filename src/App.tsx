@@ -7,7 +7,7 @@ import { Home } from "./pages/Home.tsx";
 import { Contact } from "./pages/Contact.tsx";
 import { Faq } from "./pages/Faq.tsx";
 import { HowItWorks } from "./pages/HowItWorks.tsx";
-import { Placeholder } from "./pages/Placeholder.tsx";
+import { AppPage } from "./pages/AppPage.tsx";
 import { Privacy } from "./pages/Privacy.tsx";
 import "./styles/tokens.css";
 import "./styles/app.css";
@@ -25,7 +25,7 @@ export function App() {
   let page;
   switch (route) {
     case "app":
-      page = <Placeholder titleKey="page.app" />;
+      page = <AppPage />;
       break;
     case "how":
       page = <HowItWorks />;
