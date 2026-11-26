@@ -1,0 +1,121 @@
+/* Classic: black and grey only, no accent colour. A4 at 794 px; print uses the same box. */
+.tc {
+  box-sizing: border-box;
+  width: 794px;
+  min-height: 1123px;
+  padding: 52px 60px;
+  background: #fff;
+  color: var(--text);
+  font-family: var(--font-stack);
+  font-size: 13.2px;
+  line-height: 1.5;
+  text-align: left;
+  text-transform: none;
+  letter-spacing: normal;
+}
+.tc * {
+  box-sizing: border-box;
+}
+.tc .tc-name {
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+.tc .tc-headline {
+  margin-top: 4px;
+  font-size: 15px;
+  color: var(--text-2);
+}
+.tc .tc-contact {
+  margin-top: 6px;
+  font-size: 12.5px;
+  color: #515154;
+}
+.tc .tc-sep {
+  margin: 0 8px;
+  color: #a1a1a6;
+}
+.tc .tc-h {
+  margin: 20px 0 9px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--text);
+  break-after: avoid;
+}
+.tc[lang="zh-CN"] .tc-h {
+  font-size: 13px;
+  letter-spacing: 0.3em;
+  text-transform: none;
+}
+.tc .tc-entry {
+  margin-top: 9px;
+}
+.tc .tc-entry:first-of-type {
+  margin-top: 0;
+}
+.tc .tc-keep {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+.tc .tc-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+}
+.tc .tc-title {
+  font-weight: 600;
+}
+.tc .tc-dates {
+  flex: none;
+  font-size: 12.2px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.tc .tc-lead {
+  flex: 1;
+  min-width: 0;
+}
+.tc .tc-org {
+  color: #515154;
+}
+.tc .tc-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.tc .tc-list li {
+  position: relative;
+  margin-top: 3px;
+  padding-left: 14px;
+}
+.tc .tc-list li::before {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 0.62em;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--text);
+}
+.tc .tc-skill + .tc-skill {
+  margin-top: 2px;
+}
+.tc .tc-skill strong {
+  font-weight: 600;
+}
+@media print {
+  .tc {
+    width: 210mm;
+    min-height: 0;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+}

@@ -1,0 +1,33 @@
+/* Print: only the template root, on A4, margins inside the template. */
+@page {
+  size: A4;
+  margin: 0;
+}
+@media print {
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    background: #fff;
+  }
+  body :not([data-print-root]):not([data-print-root] *):not(:has([data-print-root])) {
+    display: none !important;
+  }
+  body :has([data-print-root]) {
+    display: block !important;
+    position: static !important;
+    width: auto !important;
+    max-width: none !important;
+    height: auto !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: none !important;
+    overflow: visible !important;
+    transform: none !important;
+    zoom: 1 !important;
+  }
+}

@@ -255,6 +255,14 @@ const zhStrings: Omit<Dict, "rich"> = {
   "ed.editorLabel": "简历编辑器",
   "ed.previewLabel": "简历预览",
   "ed.previewEmpty": "输入后，简历会显示在这里。",
+  "page.templates": "模板",
+  "tpl.lead": "两款简历模板，用一位虚构的示例人物展示。",
+  "tpl.switchLabel": "模板",
+  "tpl.classic": "Classic",
+  "tpl.modern": "Modern",
+  "tpl.langLabel": "输出语言",
+  "tpl.english": "English",
+  "tpl.chinese": "中文",
 };
 
 const rich: Rich = {
