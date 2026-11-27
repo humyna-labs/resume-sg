@@ -7,19 +7,22 @@ import type { AiConfig } from "../ai-settings/useAiConfig.ts";
 const mask = (key: string): string => `${key.startsWith("sk-ant-") ? "sk-ant-" : ""}••••••••${key.slice(-4)}`;
 
 /**
- * Step 4. With a key that is not remembered on this device: a compact row (masked key, state, Change) and the model.
- * Without a key, or with a remembered one: the full AI settings panel with the 3-step help.
+ * Part of step 4, inside its card. With a key that is not remembered on this device: a compact row (masked key,
+ * state, Change) and the model. Without a key, or with a remembered one: the full AI settings panel with the 3-step help.
  */
 export function KeyArea({ cfg }: { cfg: AiConfig }) {
   const t = useT();
   const [compact, setCompact] = useState(() => cfg.key !== "" && !cfg.remember);
-  if (!compact) return <AiSettings cfg={cfg} />;
+  if (!compact) {
+    return (
+      <div data-testid="key-row">
+        <AiSettings cfg={cfg} bare />
+      </div>
+    );
+  }
   return (
-    <section className="card fcard fkey" aria-labelledby="fkey-title">
-      <h2 id="fkey-title" className="fstep">
-        <span className="fnum" aria-hidden="true">4</span>
-        {t("flow.step4")}
-      </h2>
+    <div className="fkey" data-testid="key-row">
+      <h3 className="wz-label">{t("flow.key.row")}</h3>
       <div className="fkeybox">
         <span>
           <b>{mask(cfg.key)}</b> <span className="fok">✓ {t("flow.key.connected")}</span>
@@ -48,6 +51,6 @@ export function KeyArea({ cfg }: { cfg: AiConfig }) {
         </select>
       </div>
       <p className="fsmall">{t("flow.key.note")}</p>
-    </section>
+    </div>
   );
 }

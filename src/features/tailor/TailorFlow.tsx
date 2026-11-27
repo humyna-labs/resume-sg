@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import type { KeyboardEvent } from "react";
+import { useEffect, useId, useMemo, useReducer, useRef, useState } from "react";
+import type { KeyboardEvent, ReactNode } from "react";
 import { AiConsentLine } from "../../app/AiConsentLine.tsx";
 import { AiError } from "../../ai/anthropic.ts";
 import { detectLang, factCheck } from "../../ai/factCheck.ts";
@@ -13,6 +13,8 @@ import type { Resume } from "../../resume/model.ts";
 import { DEFAULT_TEMPLATE, TEMPLATES } from "../../templates/index.ts";
 import type { TemplateId } from "../../templates/index.ts";
 import { useAiConfig } from "../ai-settings/useAiConfig.ts";
+import { initialWizard, JD_MAX_CHARS, RESUME_MAX_CHARS, textProblem, wizardReducer } from "./wizardState.ts";
+import type { Step, WizardState } from "./wizardState.ts";
 import { ResumeEditor } from "../editor/ResumeEditor.tsx";
 import { applyDecisions } from "./apply.ts";
 import { KeyArea } from "./KeyArea.tsx";
@@ -61,11 +63,11 @@ function Progress({ onCancel }: { onCancel: () => void }) {
   const now = STEP_AT.reduce((acc, at, i) => (elapsed >= at ? i : acc), 0);
   const steps: StrKey[] = ["flow.step.1", "flow.step.2", "flow.step.3", "flow.step.4"];
   return (
-    <section className="card fcard fwait" data-testid="tailor-progress" aria-live="polite">
+    <section className="card fcard fwait wz-card" data-testid="tailor-progress" aria-live="polite">
       <div className="fwait-head">
         <div className="fspin" data-testid="tailor-spinner" aria-hidden="true" />
         <div>
-          <h2>{t("flow.wait.title")}</h2>
+          <h2 className="wz-h" data-testid="step-heading" tabIndex={-1}>{t("flow.wait.title")}</h2>
           <p className="fsmall">
             {t("flow.elapsed").replace("{n}", String(elapsed))} · {t("flow.time")}
           </p>
@@ -126,15 +128,99 @@ function CancelDialog({ onKeep, onConfirm }: { onKeep: () => void; onConfirm: ()
   );
 }
 
+
+const MODE_DESC: Record<TailorMode, StrKey> = {
+  balanced: "wz.mode.desc.balanced",
+  "results-first": "wz.mode.desc.results",
+  "career-change": "wz.mode.desc.career",
+};
+const STEP_NAME: StrKey[] = ["wz.step.1", "wz.step.2", "wz.step.3", "wz.step.4", "wz.step.5"];
+const STEP_NEXT: Partial<Record<Step, StrKey>> = { 1: "wz.next.2", 2: "wz.next.3", 3: "wz.next.4" };
+
+/** Arrow keys move the choice of a radio group; focus follows. */
+function arrowKeys(e: KeyboardEvent<HTMLElement>, count: number, current: number, pick: (i: number) => void) {
+  const dir = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;
+  if (dir === 0) return;
+  e.preventDefault();
+  const next = (current + dir + count) % count;
+  pick(next);
+  const radios = e.currentTarget.querySelectorAll<HTMLElement>("[role=radio]");
+  radios[next]?.focus();
+}
+
+function Stepper({ step, locked, onGo }: { step: Step; locked: boolean; onGo: (s: Step) => void }) {
+  const t = useT();
+  return (
+    <ul className="wz-steps" data-testid="wizard-progress" aria-label={t("wz.nav")}>
+      {STEP_NAME.map((name, i) => {
+        const n = (i + 1) as Step;
+        const state = n < step ? "done" : n === step ? "current" : "todo";
+        const dot = <span className="wz-dot" aria-hidden="true">{state === "done" ? "✓" : n}</span>;
+        return (
+          <li key={name} className={`wz-st ${state}`} data-step={n} data-state={state} aria-current={state === "current" ? "step" : undefined}>
+            {state === "done" && !locked ? (
+              <button type="button" className="wz-st-btn" onClick={() => onGo(n)}>
+                {dot}
+                <span className="wz-st-label">{t(name)}</span>
+              </button>
+            ) : (
+              <>
+                {dot}
+                <span className="wz-st-label">{t(name)}</span>
+              </>
+            )}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+function Counter({ id, n, max, over }: { id: string; n: number; max: number; over: boolean }) {
+  const t = useT();
+  return (
+    <span data-testid={id} data-over={over ? "true" : undefined} className={over ? "wz-count over" : "wz-count"}>
+      {t("wz.counter").replace("{n}", fmt(n)).replace("{max}", fmt(max))}
+    </span>
+  );
+}
+
+function Footer({ step, nextLabel, ok, hint, onBack, onNext }: {
+  step: Step;
+  nextLabel: string;
+  ok: boolean;
+  hint: ReactNode[];
+  onBack: () => void;
+  onNext: () => void;
+}) {
+  const t = useT();
+  return (
+    <>
+      <div className="wz-foot" data-testid="step-footer">
+        {step > 1 ? (
+          <button type="button" className="btn btn-secondary" onClick={onBack}>
+            {t("wz.back")}
+          </button>
+        ) : (
+          <span />
+        )}
+        <button type="button" className="btn btn-primary" data-testid="step-next" disabled={!ok} onClick={onNext}>
+          {nextLabel}
+        </button>
+      </div>
+      <div data-testid="generate-hint" className="fhints wz-hint" aria-live="polite">
+        {hint}
+      </div>
+    </>
+  );
+}
+
 export function TailorFlow() {
   const t = useT();
   const { lang: uiLang } = useLang();
   const cfg = useAiConfig();
-  const [original, setOriginal] = useState("");
-  const [jd, setJd] = useState("");
-  const [tpl, setTpl] = useState<TemplateId>(DEFAULT_TEMPLATE);
-  const [outLang, setOutLang] = useState<OutputLang>(uiLang);
-  const [mode, setMode] = useState<TailorMode>("balanced");
+  const [w, dispatch] = useReducer(wizardReducer, uiLang, initialWizard);
+  const { step, original, jd, tpl, lang: outLang, mode } = w;
   const [phase, setPhase] = useState<Phase>("input");
   const [error, setError] = useState<StrKey | null>(null);
   const [asking, setAsking] = useState(false);
@@ -143,13 +229,25 @@ export function TailorFlow() {
   const [editing, setEditing] = useState<Resume | null>(null);
   const busy = useRef(false);
   const ctl = useRef<AbortController | null>(null);
+  const root = useRef<HTMLDivElement>(null);
+  const shownStep = useRef(step);
+  const uid = useId();
 
-  const missing = [
-    original.trim() === "" ? "resume" : null,
-    jd.trim() === "" ? "jd" : null,
-    cfg.key.trim() === "" ? "key" : null,
-  ].filter((x): x is "resume" | "jd" | "key" => x !== null);
-  const ready = missing.length === 0 && cfg.modelOk;
+  const set = (patch: Partial<Omit<WizardState, "step">>) => dispatch({ type: "set", patch });
+  const go = (s: Step) => dispatch({ type: "go", step: s });
+
+  const resumeProblem = textProblem(original, RESUME_MAX_CHARS);
+  const jdProblem = textProblem(jd, JD_MAX_CHARS);
+  const keyMissing = cfg.key.trim() === "";
+  const ready = resumeProblem === null && jdProblem === null && !keyMissing && cfg.modelOk;
+  const running = phase === "running";
+
+  // On every step change the focus moves to the step heading.
+  useEffect(() => {
+    if (shownStep.current === step) return;
+    shownStep.current = step;
+    root.current?.querySelector<HTMLElement>('[data-testid="step-heading"]')?.focus();
+  }, [step, phase]);
 
   // The browser's leave-page warning, only while a request runs.
   useEffect(() => {
@@ -176,6 +274,7 @@ export function TailorFlow() {
     setError(null);
     setAsking(false);
     setPhase("running");
+    go(5);
     const c = new AbortController();
     ctl.current = c;
     const run = { key: cfg.key, model: cfg.model, original, jd, lang: outLang, mode, signal: c.signal };
@@ -197,6 +296,7 @@ export function TailorFlow() {
       if (c.signal.aborted) return;
       setError(e instanceof TailorInvalidError ? "flow.err.unreadable" : (`ai.msg.${e instanceof AiError ? e.kind : "network"}` as StrKey));
       setPhase("input");
+      go(4);
     } finally {
       if (ctl.current === c) {
         ctl.current = null;
@@ -211,6 +311,12 @@ export function TailorFlow() {
     busy.current = false;
     setAsking(false);
     setPhase("input");
+    go(4);
+  }
+
+  function jump(s: Step) {
+    setPhase("input");
+    go(s);
   }
 
   const shown = useMemo(
@@ -226,9 +332,6 @@ export function TailorFlow() {
     });
   }
 
-  const hintText: Record<"resume" | "jd" | "key", StrKey> = { resume: "flow.hint.resume", jd: "flow.hint.jd", key: "flow.hint.key" };
-  const running = phase === "running";
-
   if (phase === "editing" && editing) {
     return (
       <div className="fedit">
@@ -240,152 +343,221 @@ export function TailorFlow() {
     );
   }
 
-  if (phase === "result" && result && shown) {
+  const hint = (key: string, text: string) => (
+    <p key={key} data-hint={key} className="fsmall">
+      {text}
+    </p>
+  );
+  const textStep = (kind: "resume" | "jd") => {
+    const isResume = kind === "resume";
+    const text = isResume ? original : jd;
+    const problem = isResume ? resumeProblem : jdProblem;
+    const max = isResume ? RESUME_MAX_CHARS : JD_MAX_CHARS;
+    return {
+      body: (
+        <>
+          <label className="wz-sr" htmlFor={`${uid}-${kind}`}>
+            {t(isResume ? "flow.resumeLabel" : "flow.jdLabel")}
+          </label>
+          <textarea
+            id={`${uid}-${kind}`}
+            className="input input-area ftext"
+            rows={isResume ? 14 : 12}
+            value={text}
+            onChange={(e) => set(isResume ? { original: e.target.value } : { jd: e.target.value })}
+          />
+          <div className="wz-meta">
+            <Counter id={isResume ? "resume-counter" : "jd-counter"} n={text.length} max={max} over={problem === "over"} />
+            {isResume ? <a href="#/faq">{t("wz.faqLink")}</a> : null}
+          </div>
+        </>
+      ),
+      ok: problem === null,
+      hint: problem === "empty" ? [hint(kind, t(isResume ? "flow.hint.resume" : "flow.hint.jd"))] : problem === "over" ? [hint(kind, t(isResume ? "wz.over.resume" : "wz.over.jd"))] : [],
+    };
+  };
+
+  let body: ReactNode = null;
+  let ok = true;
+  let hints: ReactNode[] = [];
+  if (step === 1 || step === 2) {
+    const s = textStep(step === 1 ? "resume" : "jd");
+    body = s.body;
+    ok = s.ok;
+    hints = s.hint;
+  } else if (step === 3) {
+    body = (
+      <>
+        <h3 className="wz-label" id={`${uid}-tpl`}>{t("wz.lbl.template")}</h3>
+        <div
+          className="ftpls"
+          role="radiogroup"
+          aria-labelledby={`${uid}-tpl`}
+          onKeyDown={(e) => arrowKeys(e, TEMPLATES.length, TEMPLATES.findIndex((x) => x.id === tpl), (i) => set({ tpl: TEMPLATES[i]?.id ?? DEFAULT_TEMPLATE }))}
+        >
+          {TEMPLATES.map((x) => (
+            <button
+              key={x.id}
+              type="button"
+              role="radio"
+              aria-checked={tpl === x.id}
+              className={`ftpl${tpl === x.id ? " sel" : ""}`}
+              onClick={() => set({ tpl: x.id })}
+            >
+              <Thumb id={x.id} />
+              <span className="flb">
+                {t(TPL_KEY[x.id])}
+                {x.id === DEFAULT_TEMPLATE ? <span className="ftag"> {t("flow.tpl.default")}</span> : null}
+              </span>
+            </button>
+          ))}
+        </div>
+        <h3 className="wz-label" id={`${uid}-lang`}>{t("tpl.langLabel")}</h3>
+        <div
+          className="fseg"
+          role="radiogroup"
+          aria-labelledby={`${uid}-lang`}
+          onKeyDown={(e) => arrowKeys(e, 2, outLang === "zh" ? 0 : 1, (i) => set({ lang: i === 0 ? "zh" : "en" }))}
+        >
+          {(["zh", "en"] as const).map((l) => (
+            <button key={l} type="button" role="radio" aria-checked={outLang === l} className={outLang === l ? "on" : ""} onClick={() => set({ lang: l })}>
+              {l === "zh" ? t("tpl.chinese") : t("tpl.english")}
+            </button>
+          ))}
+        </div>
+        <h3 className="wz-label" id={`${uid}-mode`}>{t("wz.lbl.mode")}</h3>
+        <div
+          className="wz-modes"
+          role="radiogroup"
+          aria-labelledby={`${uid}-mode`}
+          onKeyDown={(e) => arrowKeys(e, MODES.length, MODES.indexOf(mode), (i) => set({ mode: MODES[i] ?? "balanced" }))}
+        >
+          {MODES.map((m) => (
+            <button
+              key={m}
+              type="button"
+              role="radio"
+              data-mode={m}
+              aria-checked={mode === m}
+              aria-labelledby={`${uid}-${m}-t`}
+              aria-describedby={`${uid}-${m}-d`}
+              className={`wz-mode${mode === m ? " sel" : ""}`}
+              onClick={() => set({ mode: m })}
+            >
+              <span className="wz-mode-t" id={`${uid}-${m}-t`}>
+                <span className="wz-radio" aria-hidden="true" />
+                {t(MODE_KEY[m])}
+              </span>
+              <span className="wz-mode-d" id={`${uid}-${m}-d`}>
+                {t(MODE_DESC[m])}
+              </span>
+            </button>
+          ))}
+        </div>
+      </>
+    );
+  } else if (step === 4) {
+    ok = ready;
+    hints = keyMissing ? [hint("key", t("flow.hint.key"))] : [];
+    const firstLine = jd.split("\n").find((l) => l.trim() !== "") ?? "";
+    const row = (k: string, label: string, value: ReactNode, to: Step) => (
+      <div className="wz-row" data-row={k}>
+        <span>{label}</span>
+        <b className="wz-val">{value}</b>
+        <button type="button" className="btn btn-sm btn-ghost" onClick={() => go(to)}>
+          {t("wz.edit")}
+        </button>
+      </div>
+    );
+    body = (
+      <>
+        <div className="wz-sum" data-testid="step4-summary">
+          {row("resume", t("wz.sum.resume"), t("wz.sum.len").replace("{n}", fmt(original.length)), 1)}
+          {row("jd", t("wz.sum.jd"), <><span className="wz-clip">{firstLine}</span> ({t("wz.sum.len").replace("{n}", fmt(jd.length))})</>, 2)}
+          {row("options", t("wz.sum.options"), `${t(TPL_KEY[tpl])} · ${outLang === "zh" ? t("tpl.chinese") : t("tpl.english")} · ${t(MODE_KEY[mode])}`, 3)}
+        </div>
+        <KeyArea cfg={cfg} />
+        {error ? (
+          <p className="field-error" role="alert">
+            {t(error)}
+          </p>
+        ) : null}
+      </>
+    );
+  }
+
+  const stepper = <Stepper step={step} locked={running} onGo={jump} />;
+
+  if (step === 5 && running) {
     return (
-      <div className="fgrid res">
-        <ResultView
-          output={result.output}
-          shown={shown}
-          findings={result.findings}
-          decisions={decisions}
-          onDecide={decide}
-          crossLang={detectLang(result.original) !== result.lang}
-          snapshot={result.snapshot}
-          tpl={tpl}
-          onTemplate={setTpl}
-          onEditInput={() => setPhase("input")}
-          onEditResult={(r) => {
-            setEditing(r);
-            setPhase("editing");
-          }}
-        />
+      <div ref={root} className="wz">
+        {stepper}
+        <Progress onCancel={() => setAsking(true)} />
+        {asking ? <CancelDialog onKeep={() => setAsking(false)} onConfirm={confirmCancel} /> : null}
       </div>
     );
   }
 
-  return (
-    <div className="fgrid">
-      <div className="fcol">
-        <section className="card fcard">
-          <div className="fstep">
-            <span className="fnum" aria-hidden="true">1</span>
-            <label htmlFor="flow-resume">{t("flow.resumeLabel")}</label>
-          </div>
-          <textarea
-            id="flow-resume"
-            className="input input-area ftext"
-            rows={running ? 6 : 11}
-            readOnly={running}
-            value={original}
-            onChange={(e) => setOriginal(e.target.value)}
+  if (step === 5 && result && shown) {
+    return (
+      <div ref={root} className="wz wz-result">
+        {stepper}
+        <h2 className="wz-sr" data-testid="step-heading" tabIndex={-1}>
+          {t("wz.sr.result")}
+        </h2>
+        <div className="fgrid res">
+          <ResultView
+            output={result.output}
+            shown={shown}
+            findings={result.findings}
+            decisions={decisions}
+            onDecide={decide}
+            crossLang={detectLang(result.original) !== result.lang}
+            snapshot={result.snapshot}
+            tpl={tpl}
+            onTemplate={(id) => set({ tpl: id })}
+            onEditInput={() => jump(1)}
+            onEditResult={(r) => {
+              setEditing(r);
+              setPhase("editing");
+            }}
           />
-          <div className="fmeta">
-            <span>
-              {t("flow.resumeHelp")} · {fmt(original.length)} {t("flow.chars")}
-            </span>
-          </div>
-        </section>
-        <section className="card fcard">
-          <div className="fstep">
-            <span className="fnum" aria-hidden="true">2</span>
-            <label htmlFor="flow-jd">{t("flow.jdLabel")}</label>
-          </div>
-          <textarea
-            id="flow-jd"
-            className="input input-area ftext"
-            rows={running ? 4 : 7}
-            readOnly={running}
-            value={jd}
-            onChange={(e) => setJd(e.target.value)}
-          />
-          <div className="fmeta">
-            <span>
-              {t("flow.jdHelp")} · {fmt(jd.length)} {t("flow.chars")}
-            </span>
-          </div>
-        </section>
-      </div>
-      {running ? (
-        <div className="fcol">
-          <Progress onCancel={() => setAsking(true)} />
         </div>
-      ) : (
-        <div className="fcol" data-testid="tailor-options">
-          <section className="card fcard">
-            <h2 className="fstep">
-              <span className="fnum" aria-hidden="true">3</span>
-              {t("flow.step3")}
-            </h2>
-            <div className="ftpls" role="radiogroup" aria-label={t("tpl.switchLabel")}>
-              {TEMPLATES.map((x) => (
-                <button
-                  key={x.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={tpl === x.id}
-                  className={`ftpl${tpl === x.id ? " sel" : ""}`}
-                  onClick={() => setTpl(x.id)}
-                >
-                  <Thumb id={x.id} />
-                  <span className="flb">
-                    {t(TPL_KEY[x.id])}
-                    {x.id === DEFAULT_TEMPLATE ? <span className="ftag"> {t("flow.tpl.default")}</span> : null}
-                  </span>
-                </button>
-              ))}
-            </div>
-            <div className="frow">
-              <span className="flbl" id="flow-lang-label">{t("tpl.langLabel")}</span>
-              <div className="fseg" role="radiogroup" aria-labelledby="flow-lang-label">
-                {(["zh", "en"] as const).map((l) => (
-                  <button key={l} type="button" role="radio" aria-checked={outLang === l} className={outLang === l ? "on" : ""} onClick={() => setOutLang(l)}>
-                    {l === "zh" ? t("tpl.chinese") : t("tpl.english")}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="frow">
-              <span className="flbl" id="flow-mode-label">{t("flow.modeLabel")}</span>
-              <div className="fseg" role="radiogroup" aria-labelledby="flow-mode-label">
-                {MODES.map((m) => (
-                  <button key={m} type="button" role="radio" aria-checked={mode === m} className={mode === m ? "on" : ""} onClick={() => setMode(m)}>
-                    {t(MODE_KEY[m])}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </section>
-          <KeyArea cfg={cfg} />
-          <section className="card fcard">
-            {error ? (
-              <p className="field-error" role="alert">
-                {t(error)}
-              </p>
-            ) : null}
-            <button type="button" className="btn btn-lg btn-primary fgo" disabled={!ready} onClick={() => void generate()}>
-              {t("flow.generate")}
-            </button>
-            <div data-testid="generate-hint" className="fhints" aria-live="polite">
-              {missing.map((m) => (
-                <p key={m} data-hint={m} className="fsmall">
-                  {t(hintText[m])}
-                </p>
-              ))}
-            </div>
+      </div>
+    );
+  }
+
+  const stepNo = step === 5 ? 4 : step;
+  const nextLabel = stepNo === 4 ? t("flow.generate") : t(STEP_NEXT[stepNo] ?? "wz.next.2");
+  return (
+    <div ref={root} className="wz">
+      {stepper}
+      <section className="card fcard wz-card">
+        <h2 className="wz-h" data-testid="step-heading" tabIndex={-1}>
+          {t(`wz.h.${stepNo}` as StrKey)}
+        </h2>
+        <p className="wz-lead">{t(`wz.lead.${stepNo}` as StrKey)}</p>
+        {body}
+        <Footer
+          step={stepNo as Step}
+          nextLabel={nextLabel}
+          ok={ok}
+          hint={hints}
+          onBack={() => go(Math.max(1, stepNo - 1) as Step)}
+          onNext={() => (stepNo === 4 ? void generate() : go((stepNo + 1) as Step))}
+        />
+        {stepNo === 4 ? (
+          <>
             <p className="fsmall fcenter">{t("flow.time")}</p>
             <AiConsentLine />
             {result ? (
-              <button type="button" className="btn btn-sm btn-ghost" onClick={() => setPhase("result")}>
+              <button type="button" className="btn btn-sm btn-ghost" onClick={() => jump(5)}>
                 {t("flow.back")}
               </button>
             ) : null}
-          </section>
-          <section className="card fcard fempty" data-testid="resume-preview" aria-label={t("ed.previewLabel")}>
-            <p className="fsmall">{t("flow.previewEmpty")}</p>
-          </section>
-        </div>
-      )}
-      {asking ? <CancelDialog onKeep={() => setAsking(false)} onConfirm={confirmCancel} /> : null}
+          </>
+        ) : null}
+      </section>
     </div>
   );
 }

@@ -9,7 +9,7 @@ import type { AiConfig } from "./useAiConfig.ts";
 
 const REL = "noopener noreferrer";
 
-export function AiSettings({ cfg }: { cfg: AiConfig }) {
+export function AiSettings({ cfg, bare = false }: { cfg: AiConfig; bare?: boolean }) {
   const t = useT();
   const { key, remember, choice, custom, isCustom, model, modelOk, onKey, onRemember, setChoice, setCustom } = cfg;
   const [shown, setShown] = useState(false);
@@ -36,7 +36,7 @@ export function AiSettings({ cfg }: { cfg: AiConfig }) {
   }
 
   return (
-    <section className="card ai-settings" aria-labelledby="ai-title">
+    <section className={bare ? "ai-settings" : "card ai-settings"} aria-labelledby="ai-title">
       <h2 id="ai-title">{t("ai.title")}</h2>
 
       <div className="field">

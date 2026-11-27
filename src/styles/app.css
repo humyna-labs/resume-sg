@@ -1364,3 +1364,233 @@ mark {
     display: block;
   }
 }
+
+/* five-step wizard (brief v6 section 1) */
+.wz-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.wz-steps {
+  display: flex;
+  align-items: flex-start;
+  max-width: 860px;
+  margin: 6px auto 26px;
+  padding: 0;
+  list-style: none;
+}
+.wz-st {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+}
+.wz-st:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 14px;
+  left: calc(50% + 18px);
+  right: calc(-50% + 18px);
+  height: 2px;
+  background: var(--line);
+}
+.wz-st.done:not(:last-child)::after {
+  background: var(--accent);
+}
+.wz-st-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0;
+  font: inherit;
+  color: var(--text-2);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.wz-dot {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  margin-bottom: 7px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--muted);
+  background: var(--bg);
+  border: 2px solid var(--input-line);
+  border-radius: 50%;
+}
+.wz-st.done .wz-dot {
+  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.wz-st.current .wz-dot {
+  color: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-ring);
+}
+.wz-st.current {
+  color: var(--text);
+  font-weight: 700;
+}
+.wz-card,
+.stack .wz-card {
+  width: 100%;
+  max-width: 860px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.stack .wz-card h2.wz-h {
+  margin: 0;
+  font-size: 24px;
+  letter-spacing: -0.01em;
+}
+.wz-h:focus {
+  outline: none;
+}
+.stack .wz-card .wz-lead {
+  margin: -4px 0 4px;
+  color: var(--muted);
+}
+.wz-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.wz-count.over {
+  color: var(--warn);
+  font-weight: 600;
+}
+.wz-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+.stack .wz-card .btn {
+  margin-top: 0;
+}
+.wz-hint {
+  justify-items: end;
+  text-align: right;
+}
+.stack .wz-card h3.wz-label,
+.wz-label {
+  margin: 10px 0 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+.wz-modes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.wz-mode {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  padding: 12px 14px;
+  font: inherit;
+  text-align: left;
+  color: var(--text);
+  background: var(--bg);
+  border: 2px solid var(--line);
+  border-radius: var(--r-md);
+  cursor: pointer;
+}
+.wz-mode.sel {
+  border-color: var(--accent);
+  background: var(--accent-weak);
+}
+.wz-mode-t {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+}
+.wz-radio {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--input-line);
+  border-radius: 50%;
+}
+.wz-mode.sel .wz-radio {
+  border: 5px solid var(--accent);
+}
+.wz-mode-d {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+.wz-sum {
+  display: grid;
+  gap: 6px;
+  padding: 12px 16px;
+  background: var(--alt);
+  border-radius: var(--r-md);
+  font-size: 14px;
+}
+.wz-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 14px;
+}
+.wz-val {
+  display: flex;
+  min-width: 0;
+  gap: 4px;
+  color: var(--text);
+  font-weight: 600;
+}
+.wz-clip {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 760px) {
+  .wz-st {
+    font-size: 11px;
+  }
+  .wz-dot {
+    width: 26px;
+    height: 26px;
+    margin-bottom: 5px;
+    font-size: 12px;
+  }
+  .wz-st:not(:last-child)::after {
+    top: 12px;
+    left: calc(50% + 15px);
+    right: calc(-50% + 15px);
+  }
+  .stack .wz-card h2.wz-h {
+    font-size: 20px;
+  }
+  .ftpls,
+  .wz-modes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.wz-meta a {
+  color: var(--accent);
+  font-weight: 600;
+}
