@@ -40,7 +40,7 @@ afterEach(() => {
 const T = {
   en: {
     estimate: /estimate/i,
-    secondsHint: "Usually 30–60 seconds",
+    secondsHint: "Usually takes 1 to 3 minutes",
     steps: ["Reading your original resume", "Rewriting against the job description", "Checking employers, titles, dates and numbers", "Fitting the template, within 1–2 pages"],
     cancelAsk: "Cancel? This request may already be charged, and you will not see its result.",
     unreadable: "The AI returned something we could not read. Your input is still here.",
@@ -58,7 +58,7 @@ const T = {
   },
   zh: {
     estimate: /估计|预估|大约/,
-    secondsHint: "通常需要 30–60 秒",
+    secondsHint: "通常需要 1–3 分钟",
     steps: ["读取原简历", "对照职位描述改写", "核对公司、职位、日期和数字", "排进模板，控制在 1–2 页"],
     cancelAsk: "确定取消？本次 AI 费用可能已经产生，取消后看不到这次的结果。",
     unreadable: "AI 返回的内容无法识别，你的输入都还在。",
@@ -580,7 +580,7 @@ describe("criterion 13: dictionaries", () => {
   it("the spec strings exist in their dictionary", () => {
     const wanted: Record<L, string[]> = {
       en: [
-        "Your current resume", "Job description", "Generate tailored resume", "Usually 30–60 seconds", "Try an example",
+        "Your current resume", "Job description", "Generate tailored resume", "Usually takes 1 to 3 minutes", "Try an example",
         "Cancel? This request may already be charged, and you will not see its result.", "Keep waiting",
         "The AI returned something we could not read. Your input is still here.",
         "Employers, titles, dates, degrees and other numbers were all found in your original",
@@ -589,7 +589,7 @@ describe("criterion 13: dictionaries", () => {
         "What changed",
       ],
       zh: [
-        "你的原始简历", "职位描述（JD）", "生成定制简历", "通常需要 30–60 秒", "用示例试试",
+        "你的原始简历", "职位描述（JD）", "生成定制简历", "通常需要 1–3 分钟", "用示例试试",
         "确定取消？本次 AI 费用可能已经产生，取消后看不到这次的结果。", "继续等待",
         "AI 返回的内容无法识别，你的输入都还在。",
         "公司、职位、日期、学历和其他数字都能在原简历里找到",

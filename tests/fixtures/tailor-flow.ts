@@ -2,6 +2,7 @@
 import type { TailorOutput } from "../../src/ai/types.ts";
 import { DEFAULT_ORDER } from "../../src/resume/model.ts";
 import { case1Original, case1Output, case2Original, clone } from "./fact-check-cases.ts";
+import { sseBody, sseText } from "./sse.ts";
 import { case1ZhOutput, case2EnOutput } from "./fact-check-2-cases.ts";
 
 export const FAKE_KEY = "sk-ant-fakekey-abcd3f9a";
@@ -65,7 +66,7 @@ export function emptyOutput(): TailorOutput {
   return o;
 }
 
-export const apiBody = (text: string): string => JSON.stringify({ content: [{ type: "text", text }] });
-export const apiResponse = (text: string): Response =>
-  new Response(apiBody(text), { status: 200, headers: { "content-type": "application/json" } });
+// resume-sg#56: the API answers as a server-sent-event stream (see ./sse.ts).
+export const apiBody = (text: string): string => sseBody({ text });
+export const apiResponse = (text: string): Response => sseText(text);
 export const apiOutput = (o: TailorOutput): Response => apiResponse(JSON.stringify(o));
