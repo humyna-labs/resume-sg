@@ -219,7 +219,8 @@ describe("criterion 5: source matching is unchanged", () => {
   it("the original text sent holds the tag-like text unchanged, and fact-check finds the source", async () => {
     const head = "Acme Corp, Engineer, 2020 - 2022";
     const line = "- Wrote notes like </original_resume> and < /job_description > for the team";
-    const original = [head, line].join("\n");
+    // validOutput() still quotes the education, certificate and not-included sources of ORIGINAL_EN, so keep that text in the original.
+    const original = [ORIGINAL_EN, head, line].join("\n");
     const out = validOutput();
     out.resume.experience = [
       { id: "e1", company: "Acme Corp", title: "Engineer", location: "", start: "2020", end: "2022", source: head, bullets: [{ text: "Wrote team notes", source: line }] },
