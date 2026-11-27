@@ -496,8 +496,8 @@ describe("criterion 6: sample-cases fixtures (both languages)", () => {
         },
         {
           name: "added number",
-          apply: (o) => { o.resume.experience[0]!.bullets[1]!.text += "覆盖 8 个国家。"; },
-          expected: { kind: "number", level: "red", where: "experience[0].bullets[1]", values: ["8"] },
+          apply: (o) => { o.resume.experience[0]!.bullets[1]!.text += "覆盖 88 个国家。"; },
+          expected: { kind: "number", level: "red", where: "experience[0].bullets[1]", values: ["88"] },
         },
         {
           name: "number word (五次 for base 3 次)",
@@ -506,8 +506,8 @@ describe("criterion 6: sample-cases fixtures (both languages)", () => {
         },
         {
           name: "changed date",
-          apply: (o) => { o.resume.experience[1]!.end = "2021.07"; },
-          expected: { kind: "date", level: "red", where: "experience[1].end", values: ["2021.07"] },
+          apply: (o) => { o.resume.experience[1]!.end = "2018.05"; }, // #47: red only if found nowhere; 2021.07 is elsewhere (amber)
+          expected: { kind: "date", level: "red", where: "experience[1].end", values: ["2018.05"] },
         },
         {
           name: "dropped original line",
