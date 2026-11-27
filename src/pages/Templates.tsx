@@ -13,10 +13,10 @@ export function Templates({ heavy = false }: { heavy?: boolean } = {}) {
   const t = useT();
   const { lang: uiLang } = useLang();
   const [tpl, setTpl] = useState<TemplateId>(DEFAULT_TEMPLATE);
-  const [lang, setLang] = useState<Lang>("en");
+  const [lang, setLang] = useState<Lang>(uiLang);
   const prevUi = useRef(uiLang);
 
-  // The output language starts in English and follows the site language when that changes.
+  // The output language starts in the site language and follows the site language when that changes.
   useEffect(() => {
     if (prevUi.current !== uiLang) {
       prevUi.current = uiLang;

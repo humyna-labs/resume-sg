@@ -270,7 +270,7 @@ describe("criterion 9 and #/templates", () => {
       expect(screen.getByRole("heading", { level: 1, name: title })).toBeTruthy();
       const root = document.querySelector<HTMLElement>("[data-template]");
       expect(root?.dataset.template).toBe("classic");
-      expect(root?.textContent).toContain("Jamie Lin");
+      expect(root?.textContent).toContain(REFERENCE[lang].basics.name);
       activate(control(MODERN));
       expect(document.querySelector<HTMLElement>("[data-template]")?.dataset.template).toBe("modern");
     });

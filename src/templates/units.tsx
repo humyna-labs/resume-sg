@@ -293,7 +293,7 @@ export function buildUnits(resume: Resume, lang: TemplateLang, variant: Variant)
   };
 
   const extras = () => {
-    for (const x of resume.extras) section(`extra-${x.id}`, "extra", x.heading.trim(), (sec) => bullets(x.items, [sec]));
+    for (const x of resume.extras) section(`extra-${x.id}`, "extra", x.heading.trim() === "" ? names.other : x.heading.trim(), (sec) => bullets(x.items, [sec]));
   };
 
   const order: SectionId[] = [...(resume.order ?? DEFAULT_ORDER)].filter((s, i, all) => all.indexOf(s) === i);
