@@ -26,7 +26,7 @@ async function fakeApi(page: Page, posts: string[], gate?: Promise<void>) {
     if (gate) await gate;
     return route.fulfill({
       status: 200,
-      headers: { ...CORS, "content-type": "application/json" },
+      headers: { ...CORS, "content-type": "text/event-stream" },
       body: apiBody(JSON.stringify(validOutput())),
     });
   });

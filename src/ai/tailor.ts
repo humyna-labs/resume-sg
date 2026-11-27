@@ -210,11 +210,36 @@ export function parseTailorOutput(text: string): TailorOutput {
   return data as TailorOutput;
 }
 
+/** At most 12 problem paths, each clipped to 40 characters of [A-Za-z0-9_.[]]. Never any model text. */
+export function problemPaths(problems: string): string[] {
+  const out: string[] = [];
+  for (const line of problems.split("\n")) {
+    const m = /^([A-Za-z0-9_.[\]]+):/.exec(line);
+    if (m?.[1]) out.push(m[1].slice(0, 40));
+    if (out.length >= 12) break;
+  }
+  return out;
+}
+
 /** The model answered twice with something that is not a valid TailorOutput. */
 export class TailorInvalidError extends Error {
-  constructor() {
+  readonly paths: string[];
+  readonly outputTokens: number | null;
+  constructor(paths: string[] = [], outputTokens: number | null = null) {
     super("The AI returned something we could not read.");
     this.name = "TailorInvalidError";
+    this.paths = paths;
+    this.outputTokens = outputTokens;
+  }
+}
+
+/** The answer hit the output limit (stop_reason max_tokens). Not retried. */
+export class TailorCutOffError extends Error {
+  readonly outputTokens: number | null;
+  constructor(outputTokens: number | null = null) {
+    super("The AI answer was cut off.");
+    this.name = "TailorCutOffError";
+    this.outputTokens = outputTokens;
   }
 }
 
@@ -222,16 +247,26 @@ export interface TailorRun extends TailorInput {
   key: string;
   model: string;
   signal?: AbortSignal;
+  onText?: (charsSoFar: number) => void;
 }
 
-const MAX_TOKENS = 12000;
+const MAX_TOKENS = 32000;
 
-/** One AI call; on invalid output one retry with the validation errors appended; then TailorInvalidError. */
+/** One AI call; on a normal end with invalid output one retry with the problems appended; a cut-off answer is not retried. */
 export async function runTailor(run: TailorRun): Promise<TailorOutput> {
   const { system, user } = buildTailorRequest(run);
   const call = (content: string) =>
-    callAnthropic({ key: run.key, model: run.model, system, user: content, maxTokens: MAX_TOKENS, ...(run.signal ? { signal: run.signal } : {}) });
+    callAnthropic({
+      key: run.key,
+      model: run.model,
+      system,
+      user: content,
+      maxTokens: MAX_TOKENS,
+      ...(run.signal ? { signal: run.signal } : {}),
+      ...(run.onText ? { onText: run.onText } : {}),
+    });
   const first = await call(user);
+  if (first.stopReason === "max_tokens") throw new TailorCutOffError(first.outputTokens);
   let problems: string;
   try {
     return parseTailorOutput(first.text);
@@ -240,9 +275,10 @@ export async function runTailor(run: TailorRun): Promise<TailorOutput> {
   }
   const retry = `${user}\n\nYour previous answer was not valid. Fix these problems and return the complete corrected JSON object only:\n${problems}`;
   const second = await call(retry);
+  if (second.stopReason === "max_tokens") throw new TailorCutOffError(second.outputTokens);
   try {
     return parseTailorOutput(second.text);
-  } catch {
-    throw new TailorInvalidError();
+  } catch (e) {
+    throw new TailorInvalidError(problemPaths(e instanceof Error ? e.message : ""), second.outputTokens);
   }
 }

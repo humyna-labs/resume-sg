@@ -6,6 +6,7 @@ import { DEFAULT_MODEL } from "../../src/ai/settings.ts";
 import * as enMod from "../../src/i18n/en.ts";
 import * as zhMod from "../../src/i18n/zh.ts";
 import { clearKey } from "../../src/security/keyStore.ts";
+import { sseText } from "../fixtures/sse.ts";
 import { leafValues, shape } from "./dict-helpers.ts";
 import { walkTo } from "./flow-helpers.tsx";
 
@@ -69,8 +70,7 @@ const customField = (lang: L) => panel(lang).queryByLabelText(T[lang].modelId) a
 const testBtn = (lang: L) => panel(lang).getByRole("button", { name: T[lang].test }) as HTMLButtonElement;
 const typeKey = (lang: L) =>
   fireEvent.change(panel(lang).getByLabelText(T[lang].keyLabel), { target: { value: KEY } });
-const OK = JSON.stringify({ content: [{ type: "text", text: "ok" }] });
-const okResp = () => new Response(OK, { status: 200, headers: { "content-type": "application/json" } });
+const okResp = () => sseText("ok", { stopReason: "max_tokens", outputTokens: 1 });
 const sentModel = (f: ReturnType<typeof vi.fn>, n = 0) =>
   (JSON.parse(String(((f.mock.calls[n] as unknown as [string, RequestInit])[1]).body)) as { model: string }).model;
 

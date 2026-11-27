@@ -5,6 +5,7 @@ import { App } from "../../src/App.tsx";
 import * as enMod from "../../src/i18n/en.ts";
 import * as zhMod from "../../src/i18n/zh.ts";
 import { clearKey } from "../../src/security/keyStore.ts";
+import { sseText } from "../fixtures/sse.ts";
 import { leafValues, shape } from "./dict-helpers.ts";
 
 type L = "en" | "zh";
@@ -105,8 +106,9 @@ const modelInput = (lang: L) => panel(lang).getByLabelText(T[lang].modelId) as H
 const rememberBox = (lang: L) => within(main()).getByLabelText(T[lang].remember) as HTMLInputElement;
 const testBtn = (lang: L) => within(main()).getByRole("button", { name: T[lang].test }) as HTMLButtonElement;
 const typeKey = (lang: L, v = KEY) => fireEvent.change(keyInput(lang), { target: { value: v } });
-const resp = (status: number, body = "{}") => new Response(body, { status, headers: { "content-type": "application/json" } });
-const OK = JSON.stringify({ content: [{ type: "text", text: "ok" }] });
+const resp = (status: number, body = "{}") =>
+  status === 200 ? sseText(body, { stopReason: "max_tokens", outputTokens: 1 }) : new Response(body, { status, headers: { "content-type": "application/json" } });
+const OK = "ok";
 
 let logs: string[] = [];
 beforeEach(() => {

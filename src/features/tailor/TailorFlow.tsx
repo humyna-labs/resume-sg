@@ -3,7 +3,7 @@ import type { KeyboardEvent, ReactNode } from "react";
 import { AiConsentLine } from "../../app/AiConsentLine.tsx";
 import { AiError } from "../../ai/anthropic.ts";
 import { detectLang, factCheck } from "../../ai/factCheck.ts";
-import { TailorInvalidError, runTailor } from "../../ai/tailor.ts";
+import { TailorCutOffError, TailorInvalidError, runTailor } from "../../ai/tailor.ts";
 import type { OutputLang, TailorMode } from "../../ai/tailor.ts";
 import { MODEL_CHOICES } from "../../ai/settings.ts";
 import type { Decision, Finding, TailorOutput } from "../../ai/types.ts";
@@ -54,7 +54,7 @@ function Thumb({ id }: { id: TemplateId }) {
   );
 }
 
-function Progress({ onCancel }: { onCancel: () => void }) {
+function Progress({ onCancel, chars }: { onCancel: () => void; chars: number }) {
   const t = useT();
   const [elapsed, setElapsed] = useState(0);
   useEffect(() => {
@@ -71,6 +71,9 @@ function Progress({ onCancel }: { onCancel: () => void }) {
           <h2 className="wz-h" data-testid="step-heading" tabIndex={-1}>{t("flow.wait.title")}</h2>
           <p className="fsmall">
             {t("flow.elapsed").replace("{n}", String(elapsed))} · {t("flow.time")}
+          </p>
+          <p className="fsmall" data-testid="tailor-chars">
+            {chars === 0 ? t("flow.progress.thinking") : t("flow.progress.written").replace("{n}", String(Math.round(chars / 100) * 100))}
           </p>
         </div>
       </div>
@@ -224,6 +227,8 @@ export function TailorFlow() {
   const { step, original, jd, tpl, lang: outLang, mode } = w;
   const [phase, setPhase] = useState<Phase>("input");
   const [error, setError] = useState<StrKey | null>(null);
+  const [details, setDetails] = useState<{ cause: string; tokens: number | null } | null>(null);
+  const [chars, setChars] = useState(0);
   const [asking, setAsking] = useState(false);
   const [result, setResult] = useState<ResultState | null>(null);
   const [decisions, setDecisions] = useState<Record<string, Decision>>({});
@@ -275,12 +280,14 @@ export function TailorFlow() {
     if (busy.current || !ready) return;
     busy.current = true;
     setError(null);
+    setDetails(null);
+    setChars(0);
     setAsking(false);
     setPhase("running");
     go(5);
     const c = new AbortController();
     ctl.current = c;
-    const run = { key: cfg.key, model: cfg.model, original, jd, lang: outLang, mode, signal: c.signal };
+    const run = { key: cfg.key, model: cfg.model, original, jd, lang: outLang, mode, signal: c.signal, onText: setChars };
     try {
       const output = await runTailor(run);
       if (c.signal.aborted) return;
@@ -300,7 +307,15 @@ export function TailorFlow() {
       setPhase("result");
     } catch (e) {
       if (c.signal.aborted) return;
-      setError(e instanceof TailorInvalidError ? "flow.err.unreadable" : (`ai.msg.${e instanceof AiError ? e.kind : "network"}` as StrKey));
+      if (e instanceof TailorCutOffError) {
+        setError("flow.err.cutoff");
+        setDetails({ cause: "max_tokens", tokens: e.outputTokens });
+      } else if (e instanceof TailorInvalidError) {
+        setError("flow.err.unreadable");
+        setDetails({ cause: e.paths.join(", "), tokens: e.outputTokens });
+      } else {
+        setError(`ai.msg.${e instanceof AiError ? e.kind : "network"}` as StrKey);
+      }
       setPhase("input");
       go(4);
     } finally {
@@ -500,6 +515,13 @@ export function TailorFlow() {
             {t(error)}
           </p>
         ) : null}
+        {error && details ? (
+          <details>
+            <summary>{t("flow.details")}</summary>
+            {details.cause !== "" ? <p className="fsmall">{t("flow.details.cause").replace("{cause}", details.cause)}</p> : null}
+            {details.tokens !== null ? <p className="fsmall">{t("flow.details.tokens").replace("{n}", fmt(details.tokens))}</p> : null}
+          </details>
+        ) : null}
       </>
     );
   }
@@ -510,7 +532,7 @@ export function TailorFlow() {
     return (
       <div ref={root} className="wz">
         {stepper}
-        <Progress onCancel={() => setAsking(true)} />
+        <Progress onCancel={() => setAsking(true)} chars={chars} />
         {asking ? <CancelDialog onKeep={() => setAsking(false)} onConfirm={confirmCancel} /> : null}
       </div>
     );
