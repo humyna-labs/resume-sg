@@ -20,6 +20,14 @@ export interface AnthropicRequest {
   maxTokens: number;
   fetchImpl?: typeof fetch;
   signal?: AbortSignal;
+  /** Called with the number of text characters received so far. */
+  onText?: (charsSoFar: number) => void;
+}
+
+export interface AnthropicResult {
+  text: string;
+  stopReason: string | null;
+  outputTokens: number | null;
 }
 
 const URL_MESSAGES = "https://api.anthropic.com/v1/messages";
@@ -33,7 +41,10 @@ function kindFor(status: number): AiErrorKind {
   return "http";
 }
 
-export async function callAnthropic(req: AnthropicRequest): Promise<{ text: string }> {
+type Json = Record<string, unknown>;
+const isObj = (v: unknown): v is Json => typeof v === "object" && v !== null && !Array.isArray(v);
+
+export async function callAnthropic(req: AnthropicRequest): Promise<AnthropicResult> {
   const doFetch: typeof fetch = req.fetchImpl ?? ((input, init) => globalThis.fetch(input, init));
   const init: RequestInit = {
     method: "POST",
@@ -46,6 +57,7 @@ export async function callAnthropic(req: AnthropicRequest): Promise<{ text: stri
     body: JSON.stringify({
       model: req.model,
       max_tokens: req.maxTokens,
+      stream: true,
       system: req.system,
       messages: [{ role: "user", content: req.user }],
     }),
@@ -59,18 +71,87 @@ export async function callAnthropic(req: AnthropicRequest): Promise<{ text: stri
     throw new AiError("network");
   }
   if (!res.ok) throw new AiError(kindFor(res.status), res.status);
+  if (!res.body) throw new AiError("bad-response");
 
-  let data: unknown;
-  try {
-    data = await res.json();
-  } catch {
-    throw new AiError("bad-response");
+  const reader = res.body.getReader();
+  const onAbort = () => {
+    void reader.cancel().catch(() => undefined);
+  };
+  if (req.signal) {
+    if (req.signal.aborted) onAbort();
+    else req.signal.addEventListener("abort", onAbort, { once: true });
   }
-  const content = (data as { content?: unknown } | null)?.content;
-  if (!Array.isArray(content)) throw new AiError("bad-response");
+  const decoder = new TextDecoder();
+  let buf = "";
   let text = "";
-  for (const block of content as { type?: unknown; text?: unknown }[]) {
-    if (block && block.type === "text" && typeof block.text === "string") text += block.text;
+  let stopReason: string | null = null;
+  let outputTokens: number | null = null;
+  let done = false;
+
+  const handle = (block: string): void => {
+    const data = block
+      .split(/\r?\n/)
+      .filter((l) => l.startsWith("data:"))
+      .map((l) => l.slice(5).replace(/^ /, ""))
+      .join("\n");
+    if (data === "") return;
+    let ev: unknown;
+    try {
+      ev = JSON.parse(data);
+    } catch {
+      throw new AiError("bad-response");
+    }
+    if (!isObj(ev)) return;
+    switch (ev["type"]) {
+      case "error":
+        throw new AiError("bad-response");
+      case "content_block_delta": {
+        const d = ev["delta"];
+        if (isObj(d) && d["type"] === "text_delta" && typeof d["text"] === "string") {
+          text += d["text"];
+          req.onText?.(text.length);
+        }
+        break;
+      }
+      case "message_delta": {
+        const d = ev["delta"];
+        if (isObj(d) && "stop_reason" in d) stopReason = typeof d["stop_reason"] === "string" ? d["stop_reason"] : null;
+        const u = ev["usage"];
+        if (isObj(u) && typeof u["output_tokens"] === "number") outputTokens = u["output_tokens"];
+        break;
+      }
+      case "message_stop":
+        done = true;
+        break;
+      default:
+        break;
+    }
+  };
+
+  try {
+    for (;;) {
+      let chunk: ReadableStreamReadResult<Uint8Array>;
+      try {
+        chunk = await reader.read();
+      } catch {
+        throw new AiError("network");
+      }
+      if (chunk.done) break;
+      buf += decoder.decode(chunk.value, { stream: true });
+      const parts = buf.split(/\r?\n\r?\n/);
+      buf = parts.pop() ?? "";
+      for (const part of parts) handle(part);
+      if (done) break;
+    }
+    if (!done) {
+      buf += decoder.decode();
+      if (buf.trim() !== "") handle(buf);
+    }
+  } finally {
+    req.signal?.removeEventListener("abort", onAbort);
+    if (done) void reader.cancel().catch(() => undefined);
   }
-  return { text };
+  if (req.signal?.aborted) throw new AiError("network");
+  if (!done) throw new AiError("bad-response");
+  return { text, stopReason, outputTokens };
 }
