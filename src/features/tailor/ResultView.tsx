@@ -7,6 +7,7 @@ import { useT } from "../../i18n/index.ts";
 import type { Resume } from "../../resume/model.ts";
 import { TEMPLATES } from "../../templates/index.ts";
 import type { TemplateId } from "../../templates/index.ts";
+import { PAGE_H } from "../../layout/pageFit.ts";
 import { TemplateView } from "../templates/TemplateView.tsx";
 import { toResume } from "./apply.ts";
 import type { OutputLang, TailorMode } from "../../ai/tailor.ts";
@@ -162,8 +163,8 @@ function OriginalLines({ out }: { out: TailorOutput }) {
   );
 }
 
-function PageCount({ target }: { target: RefObject<HTMLElement | null> }) {
-  const t = useT();
+/** The number of rendered A4 pages in the preview, kept up to date as the preview changes. */
+function usePages(target: RefObject<HTMLElement | null>): number {
   const [pages, setPages] = useState(1);
   useEffect(() => {
     const el = target.current;
@@ -174,7 +175,7 @@ function PageCount({ target }: { target: RefObject<HTMLElement | null> }) {
     mo.observe(el, { childList: true, subtree: true });
     return () => mo.disconnect();
   }, [target]);
-  return <span className="fpages">{" "}{pages === 1 ? t("flow.page1") : fill(t("flow.pages"), pages)}</span>;
+  return pages;
 }
 
 export interface ResultProps {
@@ -189,12 +190,16 @@ export interface ResultProps {
   onTemplate: (id: TemplateId) => void;
   onEditInput: () => void;
   onEditResult: (r: Resume) => void;
+  /** Still over two pages after nothing more could move. */
+  over: boolean;
+  onPutBack: (source: string) => void;
 }
 
 export function ResultView(p: ResultProps) {
   const t = useT();
   const [tab, setTab] = useState<TabId>("check");
   const stageRef = useRef<HTMLDivElement>(null);
+  const pages = usePages(stageRef);
   const resume = useMemo(() => toResume(p.shown), [p.shown]);
   const open = unresolvedCount(p.findings, p.decisions);
   const red = p.findings.filter((f) => f.level === "red");
@@ -202,7 +207,7 @@ export function ResultView(p: ResultProps) {
   const tabs: { id: TabId; label: StrKey; count: ReactNode; good: boolean }[] = [
     { id: "check", label: "flow.tab.check", count: open > 0 ? fill(t("flow.toReview"), open) : "✓", good: open === 0 },
     { id: "changes", label: "flow.tab.changes", count: p.output.changes.length, good: true },
-    { id: "notIncluded", label: "flow.tab.notIncluded", count: p.output.notIncluded.length, good: true },
+    { id: "notIncluded", label: "flow.tab.notIncluded", count: p.shown.notIncluded.length, good: true },
   ];
   const row = (f: Finding) => <FindingRow key={f.id} f={f} decision={p.decisions[f.id]} out={p.output} onDecide={p.onDecide} />;
   const modelLine = [
@@ -262,14 +267,19 @@ export function ResultView(p: ResultProps) {
                   ))}
                 </ul>
               )
-            ) : p.output.notIncluded.length === 0 ? (
+            ) : p.shown.notIncluded.length === 0 ? (
               <p className="fsmall">{t("flow.noneLeft")}</p>
             ) : (
               <>
                 <p className="fsmall">{t("flow.notIncludedHelp")}</p>
                 <ul className="flist">
-                  {p.output.notIncluded.map((n, i) => (
-                    <li key={i}>{n.source}</li>
+                  {p.shown.notIncluded.map((n, i) => (
+                    <li key={i}>
+                      {n.source}{" "}
+                      <button type="button" className="btn btn-sm btn-ghost" onClick={() => p.onPutBack(n.source)}>
+                        {t("flow.putBack")}
+                      </button>
+                    </li>
                   ))}
                 </ul>
               </>
@@ -305,7 +315,7 @@ export function ResultView(p: ResultProps) {
               </button>
             ))}
           </div>
-          <PageCount target={stageRef} />
+          <span className="fpages" data-testid="page-count">{" "}{pages === 1 ? t("flow.page1") : fill(t("flow.pages"), pages)}</span>
           <button type="button" className="btn btn-sm btn-secondary" disabled={open > 0}>
             {t("flow.export.pdf")}
           </button>
@@ -313,10 +323,18 @@ export function ResultView(p: ResultProps) {
             {t("flow.export.md")}
           </button>
         </div>
+        {p.over ? (
+          <p className="field-error fwarn" role="status">
+            {t("flow.overTwo")}
+          </p>
+        ) : null}
         <div className="card preview fpreview" data-testid="resume-preview" data-template={p.tpl}>
           <span className="fai">{t("flow.aiLabel")}</span>
           <div className="tpl-stage" ref={stageRef}>
             <TemplateView id={p.tpl} resume={resume} lang={p.snapshot.lang} />
+            {Array.from({ length: pages - 1 }, (_, i) => (
+              <i key={i} className="page-guide" data-page-guide aria-hidden="true" style={{ top: PAGE_H * (i + 1) + 24 * i }} />
+            ))}
           </div>
         </div>
       </div>

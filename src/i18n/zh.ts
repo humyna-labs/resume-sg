@@ -399,6 +399,8 @@ const zhStrings: Omit<Dict, "rich"> = {
   "flow.back": "返回结果",
   "flow.page1": "1 页 / A4",
   "flow.pages": "{n} 页 / A4",
+  "flow.putBack": "放回",
+  "flow.overTwo": "仍超过两页，请精简原简历中的部分要点。",
   "flow.export.pdf": "导出 PDF",
   "flow.export.md": "导出 Markdown",
   "flow.aiLabel": "AI 生成 · 投递前请逐条核对",

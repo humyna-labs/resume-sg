@@ -386,7 +386,8 @@ for (const lang of LANGS) {
       const tab = (i: number) => tabs.find((x) => (x.textContent ?? "").includes(t.tabs[i] as string)) as HTMLElement;
       expect(tab(0).textContent).toContain("1");
       expect(tab(1).textContent).toContain(String(out.changes.length));
-      expect(tab(2).textContent).toContain(String(out.notIncluded.length));
+      // page-fit (#11) may move more bullets into "Not in this version": the count is at least the AI's own
+      expect(Number(/\d+/.exec(tab(2).textContent ?? "")?.[0] ?? "-1")).toBeGreaterThanOrEqual(out.notIncluded.length);
 
       const f = finding((red[0] as { id: string }).id) as HTMLElement;
       expect(f, "the red finding element").toBeTruthy();

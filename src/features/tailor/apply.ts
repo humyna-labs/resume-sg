@@ -102,6 +102,35 @@ export function applyDecisions(
   return out;
 }
 
+/**
+ * `applyDecisions`, plus the lines the user put back from "Not in this version". Returns the output before tightening
+ * and the bullet sources tightening must never move (put-back lines and "Add it back" lines).
+ */
+export function prepare(
+  output: TailorOutput,
+  findings: Finding[],
+  decisions: Record<string, Decision>,
+  putBack: string[],
+  original: string,
+  heading: string,
+): { pre: TailorOutput; fixed: string[] } {
+  const pre = applyDecisions(output, findings, decisions, original, heading);
+  const fixed: string[] = [];
+  for (const f of findings) if (decisions[f.id] === "added" && f.level === "amber" && f.kind === "coverage") fixed.push(f.value);
+  const hasBullet = (s: string): boolean => [...pre.resume.experience, ...pre.resume.projects].some((e) => e.bullets.some((b) => b.source === s));
+  for (const s of putBack) {
+    fixed.push(s);
+    if (hasBullet(s)) continue;
+    const i = pre.notIncluded.findIndex((n) => n.source === s);
+    if (i < 0) continue;
+    pre.notIncluded.splice(i, 1);
+    const line = normalise(s);
+    addBack(pre, original, line, heading);
+    fixed.push(line);
+  }
+  return { pre, fixed };
+}
+
 function ids<T extends { id: string }>(list: T[], prefix: string): T[] {
   const seen = new Set<string>();
   return list.map((x, i) => {
