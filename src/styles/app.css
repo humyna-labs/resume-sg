@@ -1618,3 +1618,25 @@ mark {
   color: var(--accent);
   font-weight: 600;
 }
+
+/* page fit: dashed guide at every A4 page break, on screen only */
+.tpl-stage {
+  position: relative;
+}
+.tpl-stage .page-guide {
+  position: absolute;
+  left: 0;
+  width: 794px;
+  height: 0;
+  border-top: 2px dashed var(--warn);
+  pointer-events: none;
+  z-index: 2;
+}
+.fwarn {
+  margin: 0;
+}
+@media print {
+  .page-guide {
+    display: none;
+  }
+}

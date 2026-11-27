@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useReducer, useRef, useState } from "react";
+import { useEffect, useId, useReducer, useRef, useState } from "react";
 import type { KeyboardEvent, ReactNode } from "react";
 import { AiConsentLine } from "../../app/AiConsentLine.tsx";
 import { AiError } from "../../ai/anthropic.ts";
@@ -16,7 +16,8 @@ import { useAiConfig } from "../ai-settings/useAiConfig.ts";
 import { initialWizard, JD_MAX_CHARS, RESUME_MAX_CHARS, textProblem, wizardReducer } from "./wizardState.ts";
 import type { Step, WizardState } from "./wizardState.ts";
 import { ResumeEditor } from "../editor/ResumeEditor.tsx";
-import { applyDecisions } from "./apply.ts";
+import { computeFit } from "./fit.tsx";
+import type { Fit } from "./fit.tsx";
 import { KeyArea } from "./KeyArea.tsx";
 import { MODE_KEY, ResultView, TPL_KEY } from "./ResultView.tsx";
 import type { ResultSnapshot } from "./ResultView.tsx";
@@ -226,6 +227,8 @@ export function TailorFlow() {
   const [asking, setAsking] = useState(false);
   const [result, setResult] = useState<ResultState | null>(null);
   const [decisions, setDecisions] = useState<Record<string, Decision>>({});
+  const [putBack, setPutBack] = useState<string[]>([]);
+  const [fit, setFit] = useState<Fit | null>(null);
   const [editing, setEditing] = useState<Resume | null>(null);
   const busy = useRef(false);
   const ctl = useRef<AbortController | null>(null);
@@ -283,14 +286,17 @@ export function TailorFlow() {
       if (c.signal.aborted) return;
       const known = MODEL_CHOICES.find((m) => m.value === cfg.model);
       const modelName = known ? t(known.labelKey).replace(/\s*[（(].*$/, "") : cfg.model;
-      setResult({
+      const res: ResultState = {
         output,
         findings: factCheck(original, output, { outputLang: outLang }),
         original,
         lang: outLang,
         snapshot: { originalLen: original.length, jdLen: jd.length, lang: outLang, mode, modelName },
-      });
+      };
+      setFit(refit(res, {}, [], tpl));
+      setResult(res);
       setDecisions({});
+      setPutBack([]);
       setPhase("result");
     } catch (e) {
       if (c.signal.aborted) return;
@@ -319,18 +325,30 @@ export function TailorFlow() {
     go(s);
   }
 
-  const shown = useMemo(
-    () => (result ? applyDecisions(result.output, result.findings, decisions, result.original, t("flow.addedHeading")) : null),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [result, decisions, uiLang],
-  );
+  const refit = (res: ResultState, dec: Record<string, Decision>, pb: string[], tplId: TemplateId): Fit =>
+    computeFit(res.output, res.findings, dec, pb, res.original, t("flow.addedHeading"), tplId, res.lang);
 
   function decide(id: string, d: Decision | null) {
-    setDecisions((cur) => {
-      const rest = Object.fromEntries(Object.entries(cur).filter(([k]) => k !== id));
-      return d === null ? rest : { ...rest, [id]: d };
-    });
+    if (!result) return;
+    const rest = Object.fromEntries(Object.entries(decisions).filter(([k]) => k !== id));
+    const next = d === null ? rest : { ...rest, [id]: d };
+    setDecisions(next);
+    setFit(refit(result, next, putBack, tpl));
   }
+
+  function putBackLine(source: string) {
+    if (!result) return;
+    const next = putBack.includes(source) ? putBack : [...putBack, source];
+    setPutBack(next);
+    setFit(refit(result, decisions, next, tpl));
+  }
+
+  function changeTemplate(id: TemplateId) {
+    set({ tpl: id });
+    if (result) setFit(refit(result, decisions, putBack, id));
+  }
+
+  const shown = fit?.shown ?? null;
 
   if (phase === "editing" && editing) {
     return (
@@ -515,7 +533,9 @@ export function TailorFlow() {
             crossLang={detectLang(result.original) !== result.lang}
             snapshot={result.snapshot}
             tpl={tpl}
-            onTemplate={(id) => set({ tpl: id })}
+            onTemplate={changeTemplate}
+            over={fit?.over ?? false}
+            onPutBack={putBackLine}
             onEditInput={() => jump(1)}
             onEditResult={(r) => {
               setEditing(r);

@@ -391,6 +391,8 @@ const strings = {
   "flow.back": "Back to the result",
   "flow.page1": "1 page · A4",
   "flow.pages": "{n} pages · A4",
+  "flow.putBack": "Put back",
+  "flow.overTwo": "Still over two pages. Shorten some bullets in your base resume.",
   "flow.export.pdf": "Export PDF",
   "flow.export.md": "Export Markdown",
   "flow.aiLabel": "AI-generated · check every line before you send it",
