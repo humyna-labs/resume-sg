@@ -19,13 +19,15 @@ export interface WizardState {
 
 export type WizardAction =
   | { type: "go"; step: Step }
-  | { type: "set"; patch: Partial<Omit<WizardState, "step">> };
+  | { type: "set"; patch: Partial<Omit<WizardState, "step">> }
+  | { type: "reset"; lang: OutputLang };
 
 export function initialWizard(lang: OutputLang): WizardState {
   return { step: 1, original: "", jd: "", tpl: DEFAULT_TEMPLATE, lang, mode: "balanced" };
 }
 
 export function wizardReducer(state: WizardState, action: WizardAction): WizardState {
+  if (action.type === "reset") return initialWizard(action.lang);
   return action.type === "go" ? { ...state, step: action.step } : { ...state, ...action.patch };
 }
 
