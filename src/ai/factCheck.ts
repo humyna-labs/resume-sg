@@ -1,4 +1,5 @@
 // Fact-check (brief v5.2 section 4): code, no AI. Pure: no network, storage or randomness.
+import { plainLine, plainText } from "./markdown.ts";
 import type { Decision, Finding, FindingKind, SourcedText, TailorOutput } from "./types.ts";
 
 export function normalise(text: string): string {
@@ -191,6 +192,20 @@ export function factCheck(original: string, out: TailorOutput, opts?: { outputLa
   const r = out.resume;
   const goodSources: string[] = [];
   const badSources: string[] = [];
+  const origLines = original.split(/\r?\n/);
+  const origDates = sourceDates(original);
+  const origNumbers = new Set(extractNumbers(original).map((n) => n.value));
+
+  /** The source and its block: the original's lines from 1 line before the source to 3 lines after it. */
+  const scopeOf = (source: string): string => {
+    const tokens = source.trim().split(/\s+/).filter((x) => x !== "");
+    if (tokens.length === 0) return source;
+    const m = new RegExp(tokens.map(escapeRe).join("\\s+")).exec(original);
+    if (!m) return source;
+    const first = original.slice(0, m.index).split("\n").length - 1;
+    const last = first + m[0].split("\n").length - 1;
+    return `${source}\n${origLines.slice(Math.max(0, first - 1), last + 4).join("\n")}`;
+  };
 
   /** (a): returns whether the source occurs in the original. */
   const checkSource = (where: string, source: string): boolean => {
@@ -224,8 +239,8 @@ export function factCheck(original: string, out: TailorOutput, opts?: { outputLa
     }
   };
 
-  const checkDates = (where: string, sourceOk: boolean, source: string, dates: [string, string][]): void => {
-    const set = sourceDates(source);
+  const checkDates = (where: string, sourceOk: boolean, scope: string, dates: [string, string][]): void => {
+    const set = sourceDates(scope);
     for (const [field, value] of dates) {
       if (normalise(value) === "") continue;
       if (!sourceOk) {
@@ -233,43 +248,53 @@ export function factCheck(original: string, out: TailorOutput, opts?: { outputLa
         continue;
       }
       const token = parseDate(value);
-      const ok = token === null ? normalise(source).includes(normalise(value)) : set.has(token);
-      if (!ok) add("red", "date", `${where}.${field}`, value);
+      const ok = token === null ? normalise(scope).includes(normalise(value)) : set.has(token);
+      if (ok) continue;
+      const elsewhere = token === null ? norm.includes(normalise(value)) : origDates.has(token);
+      add(elsewhere ? "amber" : "red", "date", `${where}.${field}`, value);
     }
   };
 
-  const checkNumbers = (where: string, text: string, haystack: string): void => {
-    const have = new Set(extractNumbers(haystack).map((n) => n.value));
-    for (const n of extractNumbers(text)) if (!have.has(n.value)) add("red", "number", where, n.raw.trim());
+  /** A number passes in the scope; elsewhere in the original it is amber; nowhere it is red. */
+  const checkNumbers = (where: string, text: string, scope: string): void => {
+    const have = new Set(extractNumbers(scope).map((n) => n.value));
+    for (const n of extractNumbers(text)) {
+      if (!have.has(n.value)) add(origNumbers.has(n.value) ? "amber" : "red", "number", where, n.raw.trim());
+    }
   };
 
-  const checkBullets = (where: string, bullets: SourcedText[]): void => {
+  const checkBullets = (where: string, bullets: SourcedText[], entryScope: string): void => {
     bullets.forEach((b, i) => {
       const w = `${where}.bullets[${i}]`;
       checkSource(w, b.source);
-      checkNumbers(w, b.text, b.source);
+      checkNumbers(w, b.text, `${scopeOf(b.source)}\n${entryScope}`);
     });
   };
 
+  const expScope = new Map<string, string>();
+  r.experience.forEach((e) => expScope.set(e.id, scopeOf(e.source)));
   r.experience.forEach((e, i) => {
     const w = `experience[${i}]`;
     const ok = checkSource(w, e.source);
     checkFacts(w, ok, e.source, [["company", e.company], ["title", e.title]]);
-    checkDates(w, ok, e.source, [["start", e.start], ["end", e.end]]);
-    checkBullets(w, e.bullets);
+    const scope = expScope.get(e.id) ?? e.source;
+    checkDates(w, ok, scope, [["start", e.start], ["end", e.end]]);
+    checkBullets(w, e.bullets, scope);
   });
   r.projects.forEach((p, i) => {
     const w = `projects[${i}]`;
     const ok = checkSource(w, p.source);
     checkFacts(w, ok, p.source, [["name", p.name]]);
-    checkDates(w, ok, p.source, [["start", p.start], ["end", p.end]]);
-    checkBullets(w, p.bullets);
+    const parent = p.experienceId === undefined ? undefined : expScope.get(p.experienceId);
+    const scope = `${scopeOf(p.source)}${parent === undefined ? "" : `\n${parent}`}`;
+    checkDates(w, ok, scope, [["start", p.start], ["end", p.end]]);
+    checkBullets(w, p.bullets, scope);
   });
   r.education.forEach((e, i) => {
     const w = `education[${i}]`;
     const ok = checkSource(w, e.source);
     checkFacts(w, ok, e.source, [["school", e.school], ["degree", e.degree]]);
-    checkDates(w, ok, e.source, [["start", e.start], ["end", e.end]]);
+    checkDates(w, ok, scopeOf(e.source), [["start", e.start], ["end", e.end]]);
   });
   r.certificates.forEach((c, i) => {
     const w = `certificates[${i}]`;
@@ -304,8 +329,12 @@ export function factCheck(original: string, out: TailorOutput, opts?: { outputLa
   }
 
   // Items: skills, project tech, languages.
+  /** The text before a bracketed gloss: "LiteFlow（规则引擎）" gives "LiteFlow". Empty for a gloss alone. */
+  const glossBase = (item: string): string => /^(.*?)\s*[(（][^)）]*[)）]\s*$/.exec(normalise(item))?.[1]?.trim() ?? "";
   const checkItem = (where: string, item: string): void => {
     if (normalise(item) === "" || occurs(norm, item)) return;
+    const base = glossBase(item);
+    if (base !== "" && occurs(norm, base)) return;
     const red = !cross || (zhToEn ? /[A-Za-z]/.test(item) && !/\s/.test(normalise(item)) : isLatinItem(item));
     add(red ? "red" : "amber", "item", where, item);
   };
@@ -325,18 +354,21 @@ export function factCheck(original: string, out: TailorOutput, opts?: { outputLa
   checkNumbers("summary", r.summary, original);
 
   // (d) coverage.
-  original.split(/\r?\n/).forEach((rawLine, i) => {
-    const line = normalise(rawLine.trim().replace(/^(?:[-•*]|\d+\.)\s+/, ""));
+  const goodPlain = goodSources.map(plainText).filter((s) => s !== "");
+  const badPlain = badSources.map(plainText).filter((s) => s !== "");
+  origLines.forEach((rawLine, i) => {
+    if (!/[\p{L}\p{N}]/u.test(rawLine)) return; // ---, ***, |---|: no letter, digit or CJK character
+    const line = plainLine(rawLine);
     if (line === "") return;
     if (HEADINGS.has(line.replace(/\s*[:：]$/, "").toLowerCase())) return;
     const ll = line.toLowerCase();
     if (name !== "" && ll.includes(name)) return;
     if (email !== "" && ll.includes(email)) return;
     if (phoneDigits !== "" && digitsOf(line).includes(phoneDigits)) return;
-    if (goodSources.some((s) => line.includes(s) || s.includes(line))) return;
-    if (badSources.some((s) => line.includes(s) || s.includes(line))) return;
+    if (goodPlain.some((s) => line.includes(s) || s.includes(line))) return;
+    if (badPlain.some((s) => line.includes(s) || s.includes(line))) return;
     // A source that failed (a) is already red; it still stands for the line it tried to cite.
-    if (badSources.some((s) => dice(s, line) >= 0.6)) return;
+    if (badPlain.some((s) => dice(s, line) >= 0.6)) return;
     add("amber", "coverage", `original:line ${i + 1}`, line);
   });
 

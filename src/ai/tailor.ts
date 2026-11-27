@@ -1,5 +1,6 @@
 // The tailor call: request builder, hand-written validator of the model output, and one automatic retry.
 import { callAnthropic } from "./anthropic.ts";
+import { cleanText } from "./markdown.ts";
 import promptRaw from "./prompts/tailor.txt?raw";
 import type { TailorOutput } from "./types.ts";
 import { defaultOrder } from "../resume/order.ts";
@@ -194,6 +195,56 @@ function validate(root: unknown): string[] {
   return c.errors;
 }
 
+/** Strips markdown and leading list markers from every text field. `source`, ids, order, email, phone and links stay as they are. */
+function cleanOutput(o: TailorOutput): TailorOutput {
+  const r = o.resume;
+  const b = r.basics;
+  b.name = cleanText(b.name);
+  b.headline = cleanText(b.headline);
+  b.location = cleanText(b.location);
+  r.summary = cleanText(r.summary);
+  const bullets = (l: { text: string }[]): void => l.forEach((x) => void (x.text = cleanText(x.text)));
+  for (const e of r.experience) {
+    e.company = cleanText(e.company);
+    e.title = cleanText(e.title);
+    e.location = cleanText(e.location);
+    e.start = cleanText(e.start);
+    e.end = cleanText(e.end);
+    bullets(e.bullets);
+  }
+  for (const p of r.projects) {
+    p.name = cleanText(p.name);
+    p.role = cleanText(p.role);
+    p.org = cleanText(p.org);
+    p.start = cleanText(p.start);
+    p.end = cleanText(p.end);
+    p.tech = p.tech.map(cleanText);
+    bullets(p.bullets);
+  }
+  for (const e of r.education) {
+    e.school = cleanText(e.school);
+    e.degree = cleanText(e.degree);
+    e.start = cleanText(e.start);
+    e.end = cleanText(e.end);
+    e.details = e.details.map(cleanText);
+  }
+  bullets(r.certificates);
+  for (const g of r.skills) {
+    g.name = cleanText(g.name);
+    g.items = g.items.map(cleanText);
+  }
+  for (const x of r.extras) {
+    x.heading = cleanText(x.heading);
+    bullets(x.items);
+  }
+  r.languages = r.languages.map(cleanText);
+  for (const c of o.changes) {
+    c.where = cleanText(c.where);
+    c.what = cleanText(c.what);
+  }
+  return o;
+}
+
 /** Parses and validates the model's text. Throws an Error whose message lists what is wrong. */
 export function parseTailorOutput(text: string): TailorOutput {
   let body = text.trim();
@@ -207,7 +258,7 @@ export function parseTailorOutput(text: string): TailorOutput {
   }
   const errors = validate(data);
   if (errors.length > 0) throw new Error(errors.join("\n"));
-  return data as TailorOutput;
+  return cleanOutput(data as TailorOutput);
 }
 
 /** At most 12 problem paths, each clipped to 40 characters of [A-Za-z0-9_.[]]. Never any model text. */

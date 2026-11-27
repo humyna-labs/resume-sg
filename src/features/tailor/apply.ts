@@ -92,7 +92,7 @@ export function applyDecisions(
   const adds: string[] = [];
   for (const f of findings) {
     const d = decisions[f.id];
-    if (d === "removed" && f.level === "red") {
+    if (d === "removed" && (f.level === "red" || (f.kind !== "coverage" && f.kind !== "basics"))) {
       const op = removal(out, f);
       if (op) ops.push(op);
     } else if (d === "added" && f.level === "amber" && f.kind === "coverage") adds.push(f.value);

@@ -63,15 +63,16 @@
   position: relative;
   padding: 2px 0 0 14px;
 }
+/* the one visible marker of a bullet: a real glyph, so there is exactly one (no list-style marker) */
+.tpl .flow .bul {
+  list-style: none;
+}
 .tpl .flow .bul::before {
-  content: "";
+  content: "•";
   position: absolute;
-  left: 2px;
-  top: calc(0.62em + 2px);
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: currentColor;
+  left: 1px;
+  top: 2px;
+  line-height: inherit;
   opacity: 0.55;
 }
 
@@ -106,6 +107,9 @@
   color: var(--text);
 }
 .tpl .flow .loc {
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: manual;
   margin-left: 10px;
   font-size: 12px;
   color: #8e8e93;
@@ -196,7 +200,7 @@
   padding-top: 0;
 }
 .tpl .flow .bul.u-first::before {
-  top: 0.62em;
+  top: 0;
 }
 
 @media print {
