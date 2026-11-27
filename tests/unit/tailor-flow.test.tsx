@@ -107,7 +107,8 @@ for (const lang of LANGS) {
       expect((within(main()).getByLabelText(c.keyLabel) as HTMLInputElement).type).toBe("password");
       const ol = Array.from(main().querySelectorAll("ol")).find((o) => o.querySelectorAll(":scope > li").length === 3);
       expect(ol, "3-step help").toBeTruthy();
-      expect(within(main()).queryByRole("button", { name: c.change })).toBeNull();
+      // scoped to the key row: step 4 summary rows also carry an Edit button (zh "修改" equals zh Change)
+      expect(within(screen.getByTestId("key-row")).queryByRole("button", { name: c.change })).toBeNull();
     });
     it("step 4 with a key: a compact row with only the last 4 characters, connection state, Change, and the model select", () => {
       startFlow(lang);
