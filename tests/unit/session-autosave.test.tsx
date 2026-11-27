@@ -85,7 +85,6 @@ async function saved(ok: (s: Raw) => boolean = () => true): Promise<string> {
 /** A reload: unmount, keep only the raw session string (a new tab keeps sessionStorage), render the page again. */
 function reload(lang: L, raw: string) {
   cleanup();
-  vi.unstubAllGlobals();
   sessionStorage.clear();
   sessionStorage.setItem(SLOT, raw);
   return renderApp(lang);
