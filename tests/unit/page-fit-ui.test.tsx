@@ -148,10 +148,10 @@ describe("criterion 5: a long resume is tightened to at most 2 pages; moved bull
     expect(factCheck(original, output)).toEqual([]);
     await run("en", output, original, 100);
     await waitFor(() => expect(toolbarText()).toMatch(PAGES.en.two), { timeout: 9000 });
-    // Changed by resume-sg#47 (H): until #12 merges, both export buttons are disabled and show the hint
-    expect(within(main()).getByRole("button", { name: /export pdf/i }).hasAttribute("disabled")).toBe(true);
-    expect(within(main()).getByRole("button", { name: /export markdown/i }).hasAttribute("disabled")).toBe(true);
-    expect(mainText()).toContain("Export coming soon");
+    // Changed by resume-sg#12: no red item is open, so both export buttons are enabled and the hint is gone
+    expect(within(main()).getByRole("button", { name: /save as pdf/i }).hasAttribute("disabled")).toBe(false);
+    expect(within(main()).getByRole("button", { name: /download markdown/i }).hasAttribute("disabled")).toBe(false);
+    expect(mainText()).not.toContain("Export coming soon");
   });
 });
 
@@ -224,7 +224,7 @@ describe("criteria 4 and 6: still over two pages when nothing can move", () => {
   const hard = () => synth(longRoles(6, 3));
 
   for (const lang of ["en", "zh"] as const) {
-    it(`${lang}: shows the real page count, the warning sentence, and export stays disabled with the hint (#47)`, async () => {
+    it(`${lang}: shows the real page count, the warning sentence, and export is enabled with no hint (#12)`, async () => {
       const { original, output } = hard();
       await run(lang, output, original, 600);
       await waitFor(() => expect(mainText()).toContain(WARN[lang]), { timeout: 9000 });
@@ -233,10 +233,10 @@ describe("criteria 4 and 6: still over two pages when nothing can move", () => {
       expect(shown).toHaveLength(6); // one bullet per entry is the floor
       const text = preview().textContent ?? "";
       for (const e of output.resume.experience) expect(text).toContain(e.company);
-      const exportBtn = within(main()).getByRole("button", { name: lang === "en" ? /export pdf/i : /导出 ?PDF/i });
-      // Changed by resume-sg#47 (H): export is disabled with the hint until #12 merges; the page count stays as #11 shows it
-      expect(exportBtn.hasAttribute("disabled")).toBe(true);
-      expect(mainText()).toContain(lang === "en" ? "Export coming soon" : "导出即将上线");
+      const exportBtn = within(main()).getByRole("button", { name: lang === "en" ? /save as pdf/i : /另存为 ?PDF/i });
+      // Changed by resume-sg#12: export is enabled (no red item) and the hint is gone; the page count stays as #11 shows it
+      expect(exportBtn.hasAttribute("disabled")).toBe(false);
+      expect(mainText()).not.toContain(lang === "en" ? "Export coming soon" : "导出即将上线");
     });
   }
 

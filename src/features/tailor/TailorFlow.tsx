@@ -2,7 +2,7 @@ import { useEffect, useId, useReducer, useRef, useState } from "react";
 import type { KeyboardEvent, ReactNode } from "react";
 import { AiConsentLine } from "../../app/AiConsentLine.tsx";
 import { AiError } from "../../ai/anthropic.ts";
-import { detectLang, factCheck } from "../../ai/factCheck.ts";
+import { detectLang, factCheck, unresolvedCount } from "../../ai/factCheck.ts";
 import { TailorCutOffError, TailorInvalidError, runTailor } from "../../ai/tailor.ts";
 import type { OutputLang, TailorMode } from "../../ai/tailor.ts";
 import { MODEL_CHOICES } from "../../ai/settings.ts";
@@ -371,7 +371,7 @@ export function TailorFlow() {
         <button type="button" className="btn btn-sm btn-secondary" onClick={() => setPhase("result")}>
           {t("flow.back")}
         </button>
-        <ResumeEditor initial={editing} />
+        <ResumeEditor initial={editing} openItems={result ? unresolvedCount(result.findings, decisions) : 0} />
       </div>
     );
   }

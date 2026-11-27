@@ -20,8 +20,8 @@ const CORS = {
   "access-control-allow-methods": "POST, OPTIONS",
 };
 const L = {
-  en: { resume: "Your current resume", jd: "Job description", key: "Anthropic API key", generate: "Generate tailored resume", tab: /^Not in this version/, warn: "Still over two pages. Shorten some bullets in your base resume.", two: /\b2 pages/, one: /\b1 page(?!s)/, many: /\b([3-9]|\d\d) pages/, pdf: /export pdf/i },
-  zh: { resume: "你的原始简历", jd: "职位描述（JD）", key: "Anthropic API key（密钥）", generate: "生成定制简历", tab: /^本版未放入/, warn: "仍超过两页，请精简原简历中的部分要点。", two: /2 页/, one: /(^|\D)1 页/, many: /([3-9]|\d\d) 页/, pdf: /导出 ?PDF/i },
+  en: { resume: "Your current resume", jd: "Job description", key: "Anthropic API key", generate: "Generate tailored resume", tab: /^Not in this version/, warn: "Still over two pages. Shorten some bullets in your base resume.", two: /\b2 pages/, one: /\b1 page(?!s)/, many: /\b([3-9]|\d\d) pages/, pdf: /save as pdf/i },
+  zh: { resume: "你的原始简历", jd: "职位描述（JD）", key: "Anthropic API key（密钥）", generate: "生成定制简历", tab: /^本版未放入/, warn: "仍超过两页，请精简原简历中的部分要点。", two: /2 页/, one: /(^|\D)1 页/, many: /([3-9]|\d\d) 页/, pdf: /另存为 ?PDF/i },
 };
 
 async function generate(page: Page, lang: "en" | "zh", fx: ReturnType<typeof synth>, requests?: string[]) {
@@ -149,14 +149,14 @@ test.describe("nothing more can move", () => {
   // 8 roles (the validator cap) x 2 bullets plus untouchable sections: over two pages even at one bullet per role
   const hardFx = () => synthHeavy();
 
-  test("criterion 4: shows the real page count and the warning; export stays disabled with the hint (#47)", async ({ page }) => {
+  test("criterion 4: shows the real page count and the warning; export is enabled with no hint (#12)", async ({ page }) => {
     await generate(page, "en", hardFx());
     await expect(page.getByText(L.en.warn)).toBeVisible();
     await expect(toolbar(page)).toContainText(L.en.many);
     await expect(bullets(page)).toHaveCount(8);
-    // Changed by resume-sg#47 (H): until #12 merges, export is disabled and shows the hint
-    await expect(page.getByRole("button", { name: L.en.pdf })).toBeDisabled();
-    await expect(page.getByText("Export coming soon")).toBeVisible();
+    // Changed by resume-sg#12: export is enabled (no red item) and the hint is gone
+    await expect(page.getByRole("button", { name: L.en.pdf })).toBeEnabled();
+    await expect(page.getByText("Export coming soon")).toHaveCount(0);
     await page.screenshot({ path: "test-results/page-fit-over-two-pages.png", fullPage: true });
   });
 
