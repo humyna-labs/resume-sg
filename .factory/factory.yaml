@@ -11,11 +11,22 @@ session_timeout_minutes: 45
 high_risk_paths:
   - package.json
   - pnpm-lock.yaml
-  - public/_headers
+  - public/**
+  - functions/**
   - src/security/**
   - src/privacy/**
   - src/crypto/**
   - src/templates/**
+  - src/ai/**
+  - src/features/ai-settings/**
+  - src/contracts/**
+  - index.html
+  - vite.config.ts
+  - pnpm-workspace.yaml
+  - .npmrc
+  - eslint.config.js
+  - tests/unit/headers.test.ts
+  - tests/unit/byok-csp.test.ts
   - workers/**
   - ci/**
   - .github/**
