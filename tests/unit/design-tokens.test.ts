@@ -161,8 +161,10 @@ describe("criterion 11: no new dependency, image, font file or external URL in C
   });
   it("no image or font files under src or public", () => {
     const files = [...SRC, ...walk("public")];
-    // ui-polish (#42) allows exactly the two How it works SVGs under src/assets/illustrations/.
-    const allowed = /(^|[\\/])src[\\/]assets[\\/]illustrations[\\/]how-it-works-(zh|en)\.svg$/;
+    // ui-polish (#42) allows exactly the two How it works SVGs under src/assets/illustrations/;
+    // launch-hygiene (#55) allows the site icon public/favicon.svg.
+    const allowed =
+      /(^|[\\/])src[\\/]assets[\\/]illustrations[\\/]how-it-works-(zh|en)\.svg$|(^|[\\/])public[\\/]favicon\.svg$/;
     expect(
       files.filter((f) => !allowed.test(f) && /\.(png|jpe?g|gif|webp|avif|svg|ico|woff2?|ttf|otf|eot)$/i.test(f)),
     ).toEqual([]);
