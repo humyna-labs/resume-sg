@@ -473,7 +473,7 @@ export function TailorFlow() {
       <>
         <div className="wz-sum" data-testid="step4-summary">
           {row("resume", t("wz.sum.resume"), t("wz.sum.len").replace("{n}", fmt(original.length)), 1)}
-          {row("jd", t("wz.sum.jd"), <><span className="wz-clip">{firstLine}</span> ({t("wz.sum.len").replace("{n}", fmt(jd.length))})</>, 2)}
+          {row("jd", t("wz.sum.jd"), <><span className="wz-clip">{firstLine}</span> <span className="wz-len">({t("wz.sum.len").replace("{n}", fmt(jd.length))})</span></>, 2)}
           {row("options", t("wz.sum.options"), `${t(TPL_KEY[tpl])} · ${outLang === "zh" ? t("tpl.chinese") : t("tpl.english")} · ${t(MODE_KEY[mode])}`, 3)}
         </div>
         <KeyArea cfg={cfg} />

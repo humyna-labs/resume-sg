@@ -1487,6 +1487,19 @@ mark {
 .stack .wz-card .btn {
   margin-top: 0;
 }
+.wz-foot .btn {
+  height: 44px;
+  padding: 0 24px;
+  font-size: 16px;
+}
+.wz-foot {
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.wz-len {
+  flex: none;
+  white-space: nowrap;
+}
 .wz-hint {
   justify-items: end;
   text-align: right;
@@ -1568,6 +1581,17 @@ mark {
   white-space: nowrap;
 }
 @media (max-width: 760px) {
+  .wz-foot .btn {
+    padding: 0 16px;
+    font-size: 15px;
+  }
+  .wz-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .wz-row > .wz-val {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
   .wz-st {
     font-size: 11px;
   }
