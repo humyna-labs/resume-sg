@@ -1,5 +1,6 @@
 // resume-sg#7 criteria 5a (links), 8 (network proof), 9 (key never rendered) and 10 (keyboard, 360 px).
 import { expect, test } from "@playwright/test";
+import { walkToStep4 } from "./flow-helpers.ts";
 import type { Page } from "@playwright/test";
 
 const KEY = "test-key-not-real";
@@ -39,6 +40,7 @@ for (const lang of ["en", "zh"] as const) {
       page.on("request", (q) => urls.push(q.url()));
       await fakeApi(page, hits);
       await page.goto("/#/app");
+      await walkToStep4(page, "Sam Sample", "Any job"); // resume-sg#41: the key row is on step 4
       const key = page.getByLabel(LABEL[lang], { exact: true });
       await expect(key).toBeVisible();
       await key.fill(KEY);
@@ -69,6 +71,7 @@ for (const lang of ["en", "zh"] as const) {
       page.on("pageerror", (e) => logs.push(e.message));
       await fakeApi(page, []);
       await page.goto("/#/app");
+      await walkToStep4(page, "Sam Sample", "Any job"); // resume-sg#41: the key row is on step 4
       const key = page.getByLabel(LABEL[lang], { exact: true });
       await key.fill(KEY);
       await page.getByRole("button", { name: TEST[lang] }).click();
@@ -104,6 +107,7 @@ for (const lang of ["en", "zh"] as const) {
       const urls: string[] = [];
       page.on("request", (q) => urls.push(q.url()));
       await page.goto("/#/app");
+      await walkToStep4(page, "Sam Sample", "Any job"); // resume-sg#41: the key row is on step 4
       const help = page.getByRole("button", { name: HELP[lang] });
       await expect(help).toHaveAttribute("aria-expanded", "true");
       const items = page.getByRole("main").locator("ol > li");
@@ -128,6 +132,7 @@ for (const lang of ["en", "zh"] as const) {
 
     test("criterion 5a: the protect link opens the FAQ entry Is my API key safe?", async ({ page }) => {
       await page.goto("/#/app");
+      await walkToStep4(page, "Sam Sample", "Any job"); // resume-sg#41: the key row is on step 4
       await page.getByRole("link", { name: PROTECT[lang] }).click();
       await expect(page).toHaveURL(/#\/faq/);
       await expect(page.getByRole("heading", { level: 1 })).toHaveText(lang === "en" ? "FAQ" : "常见问题");
@@ -140,6 +145,7 @@ for (const lang of ["en", "zh"] as const) {
       const hits: string[] = [];
       await fakeApi(page, hits);
       await page.goto("/#/app");
+      await walkToStep4(page, "Sam Sample", "Any job"); // resume-sg#41: the key row is on step 4
       const key = page.getByLabel(LABEL[lang], { exact: true });
       await key.focus();
       await page.keyboard.type(KEY);
@@ -160,6 +166,7 @@ for (const lang of ["en", "zh"] as const) {
       await page.setViewportSize({ width: 360, height: 740 });
       await fakeApi(page, []);
       await page.goto("/#/app");
+      await walkToStep4(page, "Sam Sample", "Any job"); // resume-sg#41: the key row is on step 4
       const key = page.getByLabel(LABEL[lang], { exact: true });
       await key.fill(KEY);
       await expect(page.getByRole("button", { name: TEST[lang] })).toBeVisible();

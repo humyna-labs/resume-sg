@@ -75,10 +75,21 @@ const T = {
   },
 };
 
+// resume-sg#41: the key row and the model select are on step 4 of the wizard, so #/app is walked to step 4.
 function setup(lang: L, hash = "#/app") {
   vi.spyOn(window.navigator, "language", "get").mockReturnValue(TAG[lang]);
   window.location.hash = hash;
-  return render(<App />);
+  const view = render(<App />);
+  if (hash === "#/app") {
+    const label = lang === "en" ? ["Your current resume", "Job description"] : ["你的原始简历", "职位描述（JD）"];
+    const next = () => fireEvent.click(screen.getByTestId("step-next"));
+    fireEvent.change(within(main()).getByLabelText(label[0] as string), { target: { value: "Sam Sample, backend engineer" } });
+    next();
+    fireEvent.change(within(main()).getByLabelText(label[1] as string), { target: { value: "Any backend job" } });
+    next();
+    next();
+  }
+  return view;
 }
 const main = () => screen.getByRole("main");
 const mainText = () => norm(main().textContent ?? "");
@@ -332,7 +343,9 @@ for (const lang of ["en", "zh"] as const) {
       for (const el of [keyInput(lang), modelSelect(lang), modelInput(lang), rememberBox(lang), testBtn(lang)]) {
         expect(el.getAttribute("tabindex")).not.toBe("-1");
       }
-      expect(main().querySelectorAll("[tabindex='-1']").length).toBe(0);
+      // owner 2026-11-27: the focused step heading of the wizard (resume-sg#41 criterion 10) is the one allowed tabindex=-1
+      const offenders = Array.from(main().querySelectorAll("[tabindex='-1']")).filter((e) => e.getAttribute("data-testid") !== "step-heading");
+      expect(offenders.length).toBe(0);
       expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
     });
   });

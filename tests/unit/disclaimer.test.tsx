@@ -16,10 +16,21 @@ const en = pick(enMod, "en");
 const zh = pick(zhMod, "zh");
 const ROUTES = ["#/", "#/app", "#/how-it-works", "#/faq", "#/contact", "#/privacy", "#/disclaimer"];
 
-function setup(hash: string, lang: L) {
+function setup(hash: string, lang: L, step4 = false) {
   vi.spyOn(window.navigator, "language", "get").mockReturnValue(TAG[lang]);
   window.location.hash = hash;
-  return render(<App />);
+  const view = render(<App />);
+  if (step4) {
+    // resume-sg#41: the key area and the consent line under "Test connection" are on step 4 of the wizard
+    const label = lang === "en" ? ["Your current resume", "Job description"] : ["你的原始简历", "职位描述（JD）"];
+    const next = () => fireEvent.click(screen.getByTestId("step-next"));
+    fireEvent.change(within(screen.getByRole("main")).getByLabelText(label[0] as string), { target: { value: "Sam Sample" } });
+    next();
+    fireEvent.change(within(screen.getByRole("main")).getByLabelText(label[1] as string), { target: { value: "Any job" } });
+    next();
+    next();
+  }
+  return view;
 }
 const main = () => screen.getByRole("main");
 const links = (root: HTMLElement) =>
@@ -99,7 +110,7 @@ for (const lang of ["en", "zh"] as const) {
     });
 
     it("criterion 4: consent line directly under Test connection, linking to the disclaimer, no checkbox", () => {
-      setup("#/app", lang);
+      setup("#/app", lang, true);
       const name = lang === "en" ? "Test connection" : "测试连接";
       const btn = within(main()).getByRole("button", { name });
       const lineEl = consentLineEl(D.consentLine) as Element;
@@ -121,7 +132,7 @@ for (const lang of ["en", "zh"] as const) {
 
     it("criterion 4: nothing is stored after rendering and clicking", () => {
       const before = snapshot();
-      setup("#/app", lang);
+      setup("#/app", lang, true);
       const lineEl = consentLineEl(D.consentLine);
       expect(lineEl).toBeTruthy();
       fireEvent.click(lineEl?.querySelector("a") as HTMLAnchorElement);

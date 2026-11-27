@@ -1,4 +1,5 @@
 // resume-sg#30 criteria 1 to 9, 12, 13: the tailor flow on the Start route (#/app). Fake fetch, fake key, synthetic data.
+// Updated for resume-sg#41: the input part is now five steps; criteria 1 and 2 follow the steps (the layout checks live in flow-wizard.test.tsx).
 // Test hooks are listed at the top of flow-helpers.tsx.
 import { act, cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -13,8 +14,8 @@ import {
 } from "../fixtures/tailor-flow.ts";
 import { leafValues, shape } from "./dict-helpers.ts";
 import {
-  TXT, activate, control, deferredApi, generateBtn, generateResult, isSelected, jdBox, main, mainText, norm,
-  renderApp, resetStores, resumeBox, scriptedApi, startFlow, typeInto, withKey, fillTexts, resultView,
+  TXT, activate, backBtn, control, deferredApi, generateBtn, generateResult, isSelected, jdBox, main, mainText, norm,
+  renderApp, resetStores, resumeBox, scriptedApi, startFlow, typeInto, withKey, resultView, goNext, stepNext,
 } from "./flow-helpers.tsx";
 import type { L } from "./flow-helpers.tsx";
 
@@ -79,40 +80,37 @@ for (const lang of LANGS) {
   const c = TXT[lang];
   const t = T[lang];
 
-  describe(`criterion 1: input state, ${lang}`, () => {
-    it("two labelled textareas with a character count", () => {
+  describe(`criterion 1: the inputs, the options and the key row across the steps, ${lang}`, () => {
+    it("step 1 and step 2 hold the two labelled textareas with a character count", () => {
       withKey();
       renderApp(lang);
       expect(resumeBox(lang).tagName).toBe("TEXTAREA");
-      expect(jdBox(lang).tagName).toBe("TEXTAREA");
       typeInto(resumeBox(lang), "x".repeat(1286));
-      expect(mainText()).toMatch(/1,?286/);
+      expect(mainText()).toMatch(/1,286/);
+      goNext();
+      expect(jdBox(lang).tagName).toBe("TEXTAREA");
     });
     it("the structured editor is not on the first screen", () => {
       renderApp(lang);
       expect(screen.queryByTestId("resume-editor")).toBeNull();
     });
-    it("template cards: Classic is the default, Modern is the other", () => {
-      renderApp(lang);
+    it("step 3: template cards (Classic is the default), output language and mode controls", () => {
+      startFlow(lang, { stopAt: 3 });
       expect(isSelected(control(t.templates[0] as RegExp))).toBe(true);
       expect(isSelected(control(t.templates[1] as RegExp))).toBe(false);
-    });
-    it("output language and mode controls", () => {
-      renderApp(lang);
       for (const n of t.langs) expect(control(n)).toBeTruthy();
       for (const n of t.modes) expect(control(n)).toBeTruthy();
       expect(isSelected(control(t.modes[0] as RegExp))).toBe(true);
     });
-    it("with no key: the key field and the 3-step help; no compact row", () => {
-      renderApp(lang);
+    it("step 4 with no key: the key field and the 3-step help; no compact row", () => {
+      startFlow(lang, { key: null });
       expect((within(main()).getByLabelText(c.keyLabel) as HTMLInputElement).type).toBe("password");
       const ol = Array.from(main().querySelectorAll("ol")).find((o) => o.querySelectorAll(":scope > li").length === 3);
       expect(ol, "3-step help").toBeTruthy();
       expect(within(main()).queryByRole("button", { name: c.change })).toBeNull();
     });
-    it("with a key: a compact row with only the last 4 characters, connection state, Change, and the model select", () => {
-      withKey();
-      renderApp(lang);
+    it("step 4 with a key: a compact row with only the last 4 characters, connection state, Change, and the model select", () => {
+      startFlow(lang);
       expect(within(main()).queryByLabelText(c.keyLabel)).toBeNull();
       const text = mainText();
       expect(text).toContain("3f9a");
@@ -120,11 +118,11 @@ for (const lang of LANGS) {
       expect(text).not.toContain(FAKE_KEY);
       expect(text).toMatch(lang === "en" ? /connected/i : /已连接/);
       expect(within(main()).getByRole("combobox", { name: c.modelSelect })).toBeTruthy();
-      click(btn(lang, c.change));
+      click(within(screen.getByTestId("key-row")).getByRole("button", { name: c.change }));
       expect((within(main()).getByLabelText(c.keyLabel) as HTMLInputElement).value).toBe(FAKE_KEY);
     });
-    it("the large button, the time hint and the disclaimer line", () => {
-      renderApp(lang);
+    it("step 4: the large button, the time hint and the disclaimer line", () => {
+      startFlow(lang, { key: null });
       expect(generateBtn(lang)).toBeTruthy();
       expect(mainText()).toContain(norm(t.secondsHint));
       const line = main().querySelector(".consent-line");
@@ -134,31 +132,29 @@ for (const lang of LANGS) {
   });
 
   describe(`criterion 2: Generate is disabled until ready, with a hint per missing item, ${lang}`, () => {
-    it("nothing present: disabled with three hints", () => {
-      renderApp(lang);
+    it("step 4 with nothing before it but the texts: disabled with the key hint", () => {
+      startFlow(lang, { key: null });
       expect(generateBtn(lang).disabled).toBe(true);
-      expect(hintEls().map((e) => e.dataset.hint).sort()).toEqual(["jd", "key", "resume"]);
-      for (const h of hintEls()) expect(norm(h.textContent ?? "")).not.toBe("");
-      expect(new Set(hintEls().map((h) => norm(h.textContent ?? ""))).size).toBe(3);
-    });
-    it("each item clears its own hint; all three enable the button and remove the hints", () => {
-      renderApp(lang);
-      typeInto(resumeBox(lang), ORIGINAL_EN);
-      expect(hintEls().map((e) => e.dataset.hint).sort()).toEqual(["jd", "key"]);
-      typeInto(jdBox(lang), JD_EN);
       expect(hintEls().map((e) => e.dataset.hint)).toEqual(["key"]);
-      expect(generateBtn(lang).disabled).toBe(true);
+      expect(norm(hintEls()[0]?.textContent ?? "")).not.toBe("");
+    });
+    it("the key enables the button and removes the hint", () => {
+      startFlow(lang, { key: null });
       typeInto(within(main()).getByLabelText(c.keyLabel), FAKE_KEY);
       expect(hintEls()).toHaveLength(0);
       expect(generateBtn(lang).disabled).toBe(false);
     });
-    it("whitespace-only text counts as empty", () => {
+    it("whitespace-only text counts as empty: Next stays disabled on steps 1 and 2 with the matching hint", () => {
       withKey();
       renderApp(lang);
       typeInto(resumeBox(lang), "   \n ");
-      typeInto(jdBox(lang), ORIGINAL_EN);
-      expect(generateBtn(lang).disabled).toBe(true);
+      expect(stepNext().disabled).toBe(true);
       expect(hintEls().map((e) => e.dataset.hint)).toEqual(["resume"]);
+      typeInto(resumeBox(lang), ORIGINAL_EN);
+      goNext();
+      typeInto(jdBox(lang), "  \n ");
+      expect(stepNext().disabled).toBe(true);
+      expect(hintEls().map((e) => e.dataset.hint)).toEqual(["jd"]);
     });
   });
 
@@ -191,9 +187,10 @@ for (const lang of LANGS) {
     });
     it("the chosen mode and output language reach the system prompt", async () => {
       const api = deferredApi();
-      startFlow(lang);
+      startFlow(lang, { stopAt: 3 });
       activate(control(t.modes[2] as RegExp));
       activate(control("中文"));
+      goNext();
       click(generateBtn(lang));
       await waitFor(() => expect(api.fetch).toHaveBeenCalledTimes(1));
       const s = api.calls[0]?.body.system ?? "";
@@ -233,10 +230,15 @@ for (const lang of LANGS) {
       click(generateBtn(lang));
       await waitFor(() => expect(mainText()).toContain(norm(t.unreadable)), { timeout: 4000 });
       expect(api.fetch).toHaveBeenCalledTimes(2);
-      expect(resumeBox(lang).value).toBe(ORIGINAL_EN);
-      expect(jdBox(lang).value).toBe(JD_EN);
+      // the plain error is shown on step 4, next to an enabled Generate; the texts are still in memory (#41 criterion 10)
       expect(screen.queryByTestId("tailor-progress")).toBeNull();
-      expect(generateBtn(lang).disabled).toBe(false);
+      const again = generateBtn(lang);
+      expect(again.disabled).toBe(false);
+      click(backBtn(lang));
+      click(backBtn(lang));
+      expect(jdBox(lang).value).toBe(JD_EN);
+      click(backBtn(lang));
+      expect(resumeBox(lang).value).toBe(ORIGINAL_EN);
     });
   });
 
@@ -245,10 +247,10 @@ for (const lang of LANGS) {
       vi.useFakeTimers();
       deferredApi();
       startFlow(lang);
-      expect(screen.getByTestId("tailor-options")).toBeTruthy();
+      expect(generateBtn(lang)).toBeTruthy();
       click(generateBtn(lang));
       const card = screen.getByTestId("tailor-progress");
-      expect(screen.queryByTestId("tailor-options")).toBeNull();
+      expect(screen.queryByRole("button", { name: c.generate })).toBeNull();
       expect(within(card).getByTestId("tailor-spinner")).toBeTruthy();
       expect(card.textContent).toContain(norm(t.secondsHint));
       expect(card.textContent).toMatch(t.estimate);
@@ -321,9 +323,14 @@ for (const lang of LANGS) {
       click(screen.getByTestId("cancel-confirm"));
       await waitFor(() => expect((api.calls[0]?.init.signal as AbortSignal).aborted).toBe(true));
       await waitFor(() => expect(screen.queryByTestId("tailor-progress")).toBeNull());
-      expect(resumeBox(lang).value).toBe(ORIGINAL_EN);
-      expect(jdBox(lang).value).toBe(JD_EN);
+      // a confirmed cancel returns to step 4 with everything kept (#41 criterion 9)
+      expect(generateBtn(lang).disabled).toBe(false);
       expect(screen.queryByTestId("tailor-result")).toBeNull();
+      click(backBtn(lang));
+      click(backBtn(lang));
+      expect(jdBox(lang).value).toBe(JD_EN);
+      click(backBtn(lang));
+      expect(resumeBox(lang).value).toBe(ORIGINAL_EN);
     });
     it("switching tabs (visibilitychange) does not stop the request", async () => {
       const api = await running();
@@ -445,9 +452,11 @@ for (const lang of LANGS) {
       activate(control(t.templates[1] as RegExp, screen.getByTestId("tailor-toolbar")));
       expect(screen.getByTestId("resume-preview").getAttribute("data-template")).toBe("modern");
       click(within(main()).getByRole("button", { name: c.editInput }));
+      // Edit input and regenerate goes to step 1 with the input kept (#41 criterion 9)
       expect(resumeBox(lang).value).toBe(ORIGINAL_EN);
-      expect(jdBox(lang).value).toBe(JD_EN);
       expect(screen.queryByTestId("tailor-result")).toBeNull();
+      goNext();
+      expect(jdBox(lang).value).toBe(JD_EN);
     });
     it("Edit result opens the structured editor prefilled with the result (criterion 12)", async () => {
       const out = validOutput();
@@ -466,8 +475,9 @@ for (const lang of LANGS) {
       const out = crossZhOutput();
       expect(detectLang(ORIGINAL_EN)).toBe("en");
       const api = scriptedApi([() => apiOutput(out)]);
-      startFlow(lang);
+      startFlow(lang, { stopAt: 3 });
       activate(control("中文"));
+      goNext();
       click(generateBtn(lang));
       await resultView();
       void api;
@@ -496,8 +506,9 @@ for (const lang of LANGS) {
     it("Chinese original, English output: the list shows too", async () => {
       const out = crossEnOutput();
       scriptedApi([() => apiOutput(out)]);
-      startFlow(lang, { original: ORIGINAL_ZH });
+      startFlow(lang, { original: ORIGINAL_ZH, stopAt: 3 });
       activate(control("English"));
+      goNext();
       click(generateBtn(lang));
       await resultView();
       const list = lines() as HTMLElement;
@@ -507,8 +518,9 @@ for (const lang of LANGS) {
     });
     it("same-language output shows no such list", async () => {
       scriptedApi([() => apiOutput(validOutput())]);
-      startFlow(lang);
+      startFlow(lang, { stopAt: 3 });
       activate(control("English"));
+      goNext();
       click(generateBtn(lang));
       await resultView();
       expect(lines()).toBeNull();
@@ -592,5 +604,4 @@ describe("criterion 13: dictionaries", () => {
   });
 });
 
-void fillTexts;
 void clearKey;

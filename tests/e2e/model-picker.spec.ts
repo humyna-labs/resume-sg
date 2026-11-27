@@ -1,5 +1,6 @@
 // resume-sg#25 criterion 7: keyboard, 360 px, and no request on choosing a model.
 import { expect, test } from "@playwright/test";
+import { walkToStep4 } from "./flow-helpers.ts";
 
 const API = "https://api.anthropic.com/v1/messages";
 const T = {
@@ -20,6 +21,7 @@ for (const lang of ["en", "zh"] as const) {
         return route.abort();
       });
       await page.goto("/#/app");
+      await walkToStep4(page, "Sam Sample", "Any job"); // resume-sg#41: the key row is on step 4
       const region = page.getByRole("region", { name: c.region });
       const select = region.getByRole("combobox", { name: c.select, exact: true });
       await expect(select).toBeVisible();
