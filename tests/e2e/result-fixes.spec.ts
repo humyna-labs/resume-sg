@@ -83,12 +83,12 @@ test("criterion 4: the two groups are shown with their headings and actions", as
 });
 
 // ---------------------------------------------------------------- criterion 8: export hint
-test("criterion 8: both export buttons are disabled with the hint 'Export coming soon'", async ({ page }) => {
+test("criterion 8 (changed by resume-sg#12): both export buttons are enabled and the 'Export coming soon' hint is gone", async ({ page }) => {
   await generate(page, mdZhOutput(), mdOriginal, "中文");
   const bar = page.getByTestId("tailor-toolbar");
-  await expect(bar.getByRole("button", { name: /export pdf|导出 ?PDF/i })).toBeDisabled();
-  await expect(bar.getByRole("button", { name: /export markdown|导出 ?Markdown/i })).toBeDisabled();
-  await expect(bar).toContainText(/Export coming soon|导出即将上线/);
+  await expect(bar.getByRole("button", { name: /save as pdf|另存为 ?PDF/i })).toBeEnabled();
+  await expect(bar.getByRole("button", { name: /download markdown|下载 ?Markdown/i })).toBeEnabled();
+  await expect(bar).not.toContainText(/Export coming soon|导出即将上线/);
 });
 
 // ---------------------------------------------------------------- criteria 6 and 7 in both templates and both languages
