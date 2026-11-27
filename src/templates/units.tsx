@@ -24,8 +24,9 @@ export interface Unit {
   wrap: Wrap[];
 }
 
+const OPEN_END = /^(?:present|current|now|至今)$/i;
 const dates = (a: string, b: string, lang: TemplateLang): ReactElement | null => {
-  const d = formatRange(a.trim(), b.trim(), lang);
+  const d = formatRange(a.trim(), OPEN_END.test(b.trim()) ? "" : b.trim(), lang);
   return d === "" ? null : (
     <span className="date" data-part="dates">
       {d}
@@ -102,6 +103,8 @@ export function buildUnits(resume: Resume, lang: TemplateLang, variant: Variant)
           const grp: Wrap = { key: `grp-${gi}`, tag: "div", props: { "data-group": "" } };
           const wrap = [sec, grp];
           const company = first.company.trim();
+          // one role under a company: the dates are shown once, on the company line
+          const datesOnCompany = company !== "" && g.length === 1;
           if (company !== "") {
             const location = (g.map((e) => e.location.trim()).find((l) => l !== "") ?? "");
             add(
@@ -125,7 +128,7 @@ export function buildUnits(resume: Resume, lang: TemplateLang, variant: Variant)
           }
           for (const e of g) {
             const title = e.title.trim();
-            const range = formatRange(e.start.trim(), e.end.trim(), lang);
+            const range = datesOnCompany ? "" : formatRange(e.start.trim(), e.end.trim(), lang);
             if (title !== "" || range !== "") {
               add(
                 <div className="u row rl" data-level="role">
@@ -134,7 +137,7 @@ export function buildUnits(resume: Resume, lang: TemplateLang, variant: Variant)
                       {title}
                     </span>
                   </span>
-                  {dates(e.start, e.end, lang)}
+                  {datesOnCompany ? null : dates(e.start, e.end, lang)}
                 </div>,
                 wrap,
                 true,

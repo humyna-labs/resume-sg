@@ -16,7 +16,11 @@ OUTPUT LANGUAGE
 Write every text field of the resume, "changes" and the section headings in {{LANGUAGE}}. If the original is in another language, translate it faithfully; names of people, companies, products and technologies stay as they are written in the original.
 
 THE "source" RULE
-Every experience, education and certificate entry, every project, every bullet and every item of an extras section carries "source": an exact substring of the original resume text, copied character for character, in the original language, even when the output is translated. For an entry, the source is the line or lines that name the employer, title and dates. For a bullet, it is the original line or phrase it comes from. Never paraphrase a source and never use text from the job description as a source.
+Every experience, education and certificate entry, every project, every bullet and every item of an extras section carries "source": an exact substring of the original resume text, copied character for character, in the original language, even when the output is translated. Never paraphrase a source and never use text from the job description as a source.
+- The source of an entry covers its whole original block: the heading, the date line and the bullets of that entry, from its first line to its last, as one exact substring (blank lines inside it are fine).
+- The source of a bullet is its exact original line, copied character for character with its list marker.
+- Skills are copied exactly as written in the original: no added explanations, no merges of several skills into one and no renames. Do not add a gloss in brackets to a skill or translate a skill that is a product or technology name.
+- Every text field of the resume is plain text only, with no markdown at all: no #, >, *, _, `, | or list marker at the start of a text. (The "source" fields are the one exception: they are copied from the original as they are.)
 
 SECTION ORDER
 "order" lists the eight section ids in this exact order, with no change:

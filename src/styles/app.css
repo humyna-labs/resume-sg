@@ -1218,6 +1218,8 @@ mark {
   color: var(--warn);
 }
 .ffind {
+  min-width: 0;
+  overflow-wrap: anywhere;
   display: grid;
   gap: 4px;
   padding: 12px 14px;
@@ -1234,7 +1236,14 @@ mark {
 .ffind.done {
   background: var(--alt);
 }
+.fgroup {
+  min-width: 0;
+}
+.fhint {
+  align-self: center;
+}
 .ffind mark {
+  overflow-wrap: anywhere;
   background: transparent;
   font-weight: 700;
 }

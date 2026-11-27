@@ -79,10 +79,46 @@ describe.each(IDS)("criterion 3: grouping in %s", (id) => {
       expect(c0.compareDocumentPosition(roles[0]!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     });
 
-    it(`${lang}: a company with one role has the company line and the role line`, () => {
+    // Changed by resume-sg#47 (G): a company with exactly one role shows its dates once, on the company line.
+    it(`${lang}: a company with one role has the company line and the role line; the dates show once, on the company line`, () => {
       const root = renderT(id, base({ experience: [exp("e1", "Solo Co", "Analyst", "2020-01", "2021-01")] }), lang);
       expect(q(root, '[data-level="company"]')).toHaveLength(1);
       expect(q(root, '[data-level="role"]')).toHaveLength(1);
+      const co = q(root, '[data-level="company"]')[0]!;
+      const role = q(root, '[data-level="role"]')[0]!;
+      expect(txt(part(co, "dates"))).toBe(formatRange("2020-01", "2021-01", lang));
+      expect(q(co, '[data-part="dates"]')).toHaveLength(1);
+      expect(q(role, '[data-part="dates"]')).toHaveLength(0);
+      expect(txt(part(role, "title"))).toBe("Analyst");
+      expect(q(q(root, "[data-group]")[0]!, '[data-part="dates"]')).toHaveLength(1);
+    });
+    it(`${lang}: a one-role company that is still open shows its range once on the company line`, () => {
+      const root = renderT(id, base({ experience: [exp("e1", "Solo Co", "Analyst", "2022-05", "")] }), lang);
+      expect(txt(part(q(root, '[data-level="company"]')[0]!, "dates"))).toBe(formatRange("2022-05", "", lang));
+      expect(q(q(root, '[data-level="role"]')[0]!, '[data-part="dates"]')).toHaveLength(0);
+    });
+    it(`${lang}: a one-role company with no title has no role line and still one set of dates`, () => {
+      const root = renderT(id, base({ experience: [exp("e1", "Solo Co", "", "2020-01", "2021-01")] }), lang);
+      expect(q(root, '[data-level="role"]')).toHaveLength(0);
+      expect(q(root, '[data-part="dates"]')).toHaveLength(1);
+    });
+    it(`${lang}: a one-role company shows its own dates once; a company with two roles keeps its role dates`, () => {
+      const root = renderT(
+        id,
+        base({
+          experience: [
+            exp("e1", "Acme", "Lead", "2023-01", ""),
+            exp("e2", "Acme", "Engineer", "2021-03", "2022-12"),
+            exp("e3", "Beta Ltd", "Analyst", "2017-01", "2019-03"),
+          ],
+        }),
+        lang,
+      );
+      const [g1, g2] = q(root, "[data-group]");
+      expect(q(g1!, '[data-level="role"] [data-part="dates"]')).toHaveLength(2);
+      expect(q(g1!, '[data-level="company"] [data-part="dates"]')).toHaveLength(1);
+      expect(q(g2!, '[data-level="role"] [data-part="dates"]')).toHaveLength(0);
+      expect(txt(part(q(g2!, '[data-level="company"]')[0]!, "dates"))).toBe(formatRange("2017-01", "2019-03", lang));
     });
   }
 

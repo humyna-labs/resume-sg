@@ -100,11 +100,13 @@ function FindingRow({
   const red = f.level === "red";
   const addable = !red && f.kind === "coverage";
   const nameNote = !red && f.kind === "basics";
+  const elsewhere = !red && (f.kind === "date" || f.kind === "number");
+  const removable = red || elsewhere || f.kind === "item";
   const status: StrKey | null = decision === "removed" ? "flow.status.removed" : decision === "kept" ? "flow.status.kept" : decision === "added" ? "flow.status.added" : null;
   return (
     <div className={`ffind ${red ? "red" : "amber"}${status ? " done" : ""}`} data-finding-id={f.id}>
       <div className="fq">
-        {t(nameNote ? "flow.f.name" : KIND_KEY[f.kind])}
+        {t(nameNote ? "flow.f.name" : elsewhere ? "flow.f.elsewhere" : KIND_KEY[f.kind])}
         <mark>{f.value}</mark>
       </div>
       <div className="fsmall">
@@ -118,13 +120,19 @@ function FindingRow({
             {t("flow.undo")}
           </button>
         </div>
-      ) : red ? (
+      ) : removable ? (
         <div className="facts">
           <button type="button" className="btn btn-sm btn-secondary" onClick={() => onDecide(f.id, "removed")}>
             {t("flow.remove")}
           </button>
           <button type="button" className="btn btn-sm btn-ghost" onClick={() => onDecide(f.id, "kept")}>
-            {t("flow.keep")}
+            {t(red ? "flow.keep" : "flow.keepOk")}
+          </button>
+        </div>
+      ) : nameNote ? (
+        <div className="facts">
+          <button type="button" className="btn btn-sm btn-ghost" onClick={() => onDecide(f.id, "kept")}>
+            {t("flow.keepOk")}
           </button>
         </div>
       ) : addable ? (
@@ -203,7 +211,8 @@ export function ResultView(p: ResultProps) {
   const resume = useMemo(() => toResume(p.shown), [p.shown]);
   const open = unresolvedCount(p.findings, p.decisions);
   const red = p.findings.filter((f) => f.level === "red");
-  const amber = p.findings.filter((f) => f.level === "amber");
+  const notFound = p.findings.filter((f) => f.level === "amber" && f.kind !== "coverage");
+  const missing = p.findings.filter((f) => f.level === "amber" && f.kind === "coverage");
   const tabs: { id: TabId; label: StrKey; count: ReactNode; good: boolean }[] = [
     { id: "check", label: "flow.tab.check", count: open > 0 ? fill(t("flow.toReview"), open) : "✓", good: open === 0 },
     { id: "changes", label: "flow.tab.changes", count: p.output.changes.length, good: true },
@@ -245,12 +254,19 @@ export function ResultView(p: ResultProps) {
               <>
                 {red.map(row)}
                 {open === 0 ? <p className="fpassed">✓ {t("flow.green")}</p> : null}
-                {amber.length > 0 ? (
-                  <>
+                {notFound.length > 0 ? (
+                  <section className="fgroup" data-testid="finding-group-notfound">
+                    <h3 className="fsub">{t("flow.notFound")}</h3>
+                    <p className="fsmall">{t("flow.notFoundHelp")}</p>
+                    {notFound.map(row)}
+                  </section>
+                ) : null}
+                {missing.length > 0 ? (
+                  <section className="fgroup" data-testid="finding-group-missing">
                     <h3 className="fsub">{t("flow.possibly")}</h3>
                     <p className="fsmall">{t("flow.possiblyHelp")}</p>
-                    {amber.map(row)}
-                  </>
+                    {missing.map(row)}
+                  </section>
                 ) : null}
                 <p className="fsmall">{t("flow.exportNote")}</p>
                 {p.crossLang ? <OriginalLines out={p.shown} /> : null}
@@ -316,12 +332,13 @@ export function ResultView(p: ResultProps) {
             ))}
           </div>
           <span className="fpages" data-testid="page-count">{" "}{pages === 1 ? t("flow.page1") : fill(t("flow.pages"), pages)}</span>
-          <button type="button" className="btn btn-sm btn-secondary" disabled={open > 0}>
+          <button type="button" className="btn btn-sm btn-secondary" disabled>
             {t("flow.export.pdf")}
           </button>
-          <button type="button" className="btn btn-sm btn-secondary" disabled={open > 0}>
+          <button type="button" className="btn btn-sm btn-secondary" disabled>
             {t("flow.export.md")}
           </button>
+          <span className="fsmall fhint">{t("flow.export.soon")}</span>
         </div>
         {p.over ? (
           <p className="field-error fwarn" role="status">

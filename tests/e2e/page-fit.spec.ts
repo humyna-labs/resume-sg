@@ -149,12 +149,14 @@ test.describe("nothing more can move", () => {
   // 8 roles (the validator cap) x 2 bullets plus untouchable sections: over two pages even at one bullet per role
   const hardFx = () => synthHeavy();
 
-  test("criterion 4: shows the real page count and the warning; export stays allowed", async ({ page }) => {
+  test("criterion 4: shows the real page count and the warning; export stays disabled with the hint (#47)", async ({ page }) => {
     await generate(page, "en", hardFx());
     await expect(page.getByText(L.en.warn)).toBeVisible();
     await expect(toolbar(page)).toContainText(L.en.many);
     await expect(bullets(page)).toHaveCount(8);
-    await expect(page.getByRole("button", { name: L.en.pdf })).toBeEnabled();
+    // Changed by resume-sg#47 (H): until #12 merges, export is disabled and shows the hint
+    await expect(page.getByRole("button", { name: L.en.pdf })).toBeDisabled();
+    await expect(page.getByText("Export coming soon")).toBeVisible();
     await page.screenshot({ path: "test-results/page-fit-over-two-pages.png", fullPage: true });
   });
 
