@@ -1,6 +1,7 @@
 // resume-sg#7 criteria 5a (links), 8 (network proof), 9 (key never rendered) and 10 (keyboard, 360 px).
 import { expect, test } from "@playwright/test";
 import { walkToStep4 } from "./flow-helpers.ts";
+import { sseBody } from "../fixtures/sse.ts";
 import type { Page } from "@playwright/test";
 
 const KEY = "test-key-not-real";
@@ -23,8 +24,8 @@ async function fakeApi(page: Page, hits: string[]) {
     if (route.request().method() === "OPTIONS") return route.fulfill({ status: 204, headers: CORS });
     return route.fulfill({
       status: 200,
-      headers: { ...CORS, "content-type": "application/json" },
-      body: JSON.stringify({ content: [{ type: "text", text: "ok" }] }),
+      headers: { ...CORS, "content-type": "text/event-stream" },
+      body: sseBody({ text: "ok", stopReason: "max_tokens", outputTokens: 1 }),
     });
   });
 }

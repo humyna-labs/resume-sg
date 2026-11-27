@@ -26,7 +26,7 @@ export async function openEditor(page: Page): Promise<void> {
     if (route.request().method() === "OPTIONS") return route.fulfill({ status: 204, headers: CORS });
     return route.fulfill({
       status: 200,
-      headers: { ...CORS, "content-type": "application/json" },
+      headers: { ...CORS, "content-type": "text/event-stream" },
       body: apiBody(JSON.stringify(emptyOutput())),
     });
   });
