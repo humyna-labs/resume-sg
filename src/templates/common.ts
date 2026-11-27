@@ -17,8 +17,9 @@ export const SECTION_NAMES = {
     skills: "Skills",
     certificates: "Certificates",
     languages: "Languages",
+    other: "Other",
   },
-  zh: { summary: "个人简介", experience: "工作经历", projects: "项目经历", education: "教育背景", skills: "专业技能", certificates: "证书", languages: "语言" },
+  zh: { summary: "个人简介", experience: "工作经历", projects: "项目经历", education: "教育背景", skills: "专业技能", certificates: "证书", languages: "语言", other: "其他" },
 } as const;
 
 export const filled = (list: readonly string[]): string[] => list.filter((s) => s.trim() !== "");
