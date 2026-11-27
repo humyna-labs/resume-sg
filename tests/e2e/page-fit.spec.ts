@@ -8,6 +8,7 @@
 // "Put back" button per moved bullet, and the warning sentence of criterion 4 in <main>.
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
+import { walkToStep4 } from "./flow-helpers.ts";
 import { apiBody } from "../fixtures/tailor-flow.ts";
 import { longRoles, shortRoles, synth, synthHeavy } from "../fixtures/page-fit.ts";
 
@@ -29,12 +30,10 @@ async function generate(page: Page, lang: "en" | "zh", fx: ReturnType<typeof syn
     if (route.request().method() === "OPTIONS") return route.fulfill({ status: 204, headers: CORS });
     return route.fulfill({ status: 200, headers: { ...CORS, "content-type": "application/json" }, body: apiBody(JSON.stringify(fx.output)) });
   });
-  const c = L[lang];
   await page.goto("/#/app");
-  await page.getByLabel(c.key).fill(KEY);
-  await page.getByLabel(c.resume).fill(fx.original);
-  await page.getByLabel(c.jd).fill("Senior Engineer, any company. Requirements: delivery, review and rollout work.");
-  await page.getByRole("button", { name: c.generate }).click();
+  // wizard (#41): resume on step 1, job description on step 2, step 3 is the mode, the key is typed on step 4
+  await walkToStep4(page, fx.original, "Senior Engineer, any company. Requirements: delivery, review and rollout work.", KEY);
+  await page.getByRole("button", { name: L[lang].generate }).click();
   await expect(page.getByTestId("tailor-result")).toBeVisible({ timeout: 30_000 });
 }
 
