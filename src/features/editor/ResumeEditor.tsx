@@ -113,7 +113,7 @@ function StringList({
   );
 }
 
-export function ResumeEditor({ initial }: { initial?: Resume }) {
+export function ResumeEditor({ initial, openItems = 0 }: { initial?: Resume; openItems?: number }) {
   const t = useT();
   const [r, setR] = useState<Resume>(() => initial ?? emptyResume());
   const apply = (f: (r: Resume) => Resume) => setR((cur) => f(cur));
@@ -372,7 +372,7 @@ export function ResumeEditor({ initial }: { initial?: Resume }) {
         </section>
       </div>
       <div className="preview-col">
-        <Preview resume={r} />
+        <Preview resume={r} open={openItems} />
         <PersonalInfoList resume={r} />
       </div>
     </div>
