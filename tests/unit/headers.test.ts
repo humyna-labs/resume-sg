@@ -1,6 +1,6 @@
 // @vitest-environment node
 // Structural test (P-05): the Cloudflare Pages headers file keeps a strict CSP.
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -21,4 +21,10 @@ describe("public/_headers", () => {
   it.each(["X-Content-Type-Options: nosniff", "Referrer-Policy: no-referrer", "Strict-Transport-Security:"])("sets %s", (h) => {
     expect(headers).toContain(h);
   });
+  it.each(["functions", join("public", "_worker.js"), join("public", "_redirects"), join("public", "_routes.json")])(
+    "has no Cloudflare Pages server code or routing file %s (the site is static; a function could receive the key)",
+    (p) => {
+      expect(existsSync(join(import.meta.dirname, "..", "..", p))).toBe(false);
+    },
+  );
 });
