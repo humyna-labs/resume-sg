@@ -36,7 +36,7 @@ test.describe("base resume e2e", () => {
 
     await page.reload();
     await expect(page.getByTestId("resume-editor")).toHaveCount(0);
-    await expect(page.getByTestId("resume-preview")).not.toContainText("Sam Sample");
+    await expect(page.getByTestId("resume-preview")).toHaveCount(0); // resume-sg#41: no empty preview card beside the wizard
   });
 
   test("criterion 9: keyboard reaches every control, each has a name", async ({ page }) => {

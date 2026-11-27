@@ -7,6 +7,7 @@ import * as enMod from "../../src/i18n/en.ts";
 import * as zhMod from "../../src/i18n/zh.ts";
 import { clearKey } from "../../src/security/keyStore.ts";
 import { leafValues, shape } from "./dict-helpers.ts";
+import { walkTo } from "./flow-helpers.tsx";
 
 type L = "en" | "zh";
 const TAG = { en: "en-US", zh: "zh-CN" } as const;
@@ -50,7 +51,10 @@ const T = {
 function setup(lang: L) {
   vi.spyOn(window.navigator, "language", "get").mockReturnValue(TAG[lang]);
   window.location.hash = "#/app";
-  return render(<App />);
+  const view = render(<App />);
+  // #41: the AI settings panel (key row and model select) lives on step 4 of the wizard.
+  walkTo(lang, 4);
+  return view;
 }
 const panel = (lang: L) => within(screen.getByRole("region", { name: T[lang].region }));
 const select = (lang: L) => panel(lang).getByRole("combobox", { name: T[lang].select }) as HTMLSelectElement;

@@ -1,8 +1,16 @@
 // Shared helpers for resume-sg#30 (tailor flow) tests and for the route-level editor tests that now
 // reach the editor through "Edit result".
 //
-// Test hooks the builder must provide on the Start route (#/app):
-//  - labelled textareas: "你的原始简历 / Your current resume" and "职位描述（JD）/ Job description"
+// Updated for resume-sg#41 (five-step wizard, brief v6). Test hooks the builder must provide on the Start route (#/app):
+//  - wizard: data-testid="wizard-progress" (five <li data-step="1".."5" data-state="done|current|todo">; done nodes hold a
+//    button, the current node has aria-current="step"), data-testid="step-heading" (the focused heading of the current
+//    step, tabindex -1), data-testid="step-footer" holding the Back button (steps 2 to 4) and the primary button
+//    data-testid="step-next" (named after the next step; on step 4 it is "Generate tailored resume"),
+//    data-testid="generate-hint" under the primary button holding one [data-hint] element per missing item.
+//    Step 1 shows only the resume textarea, step 2 only the JD textarea, step 3 the template, language and mode,
+//    step 4 the summary, the key row, the model select and Generate.
+//  - data-testid="key-row" around the key row of step 4 (compact row or key field)
+//  - labelled textareas: "你的原始简历 / Your current resume" (step 1) and "职位描述（JD）/ Job description" (step 2)
 //  - key input labelled "Anthropic API key" ("Anthropic API key（密钥）") when no key; a compact row with a
 //    "修改 / Change" button when a key exists; the model <select> named "模型 / Model" (both states)
 //  - template cards, output language and mode as radio, tab, button or option controls inside <main>
@@ -75,10 +83,30 @@ export const jdBox = (lang: L) => within(main()).getByLabelText(TXT[lang].jd) as
 export const typeInto = (el: HTMLElement, value: string) => fireEvent.change(el, { target: { value } });
 export const generateBtn = (lang: L) =>
   within(main()).getByRole("button", { name: TXT[lang].generate }) as HTMLButtonElement;
-export const fillTexts = (lang: L, original = ORIGINAL_EN, jd = JD_EN) => {
-  typeInto(resumeBox(lang), original);
-  typeInto(jdBox(lang), jd);
+
+export const stepNext = () => screen.getByTestId("step-next") as HTMLButtonElement;
+export const stepHeading = () => screen.getByTestId("step-heading");
+export const NEXT = {
+  en: ["Next: Job description →", "Next: Template & mode →", "Next: Generate →"],
+  zh: ["下一步：职位描述 →", "下一步：模板与方式 →", "下一步：生成 →"],
+} as const;
+export const BACK = { en: "← Back", zh: "← 上一步" } as const;
+export const backBtn = (lang: L) => within(screen.getByTestId("step-footer")).getByRole("button", { name: BACK[lang] });
+export const goNext = () => {
+  expect(stepNext().disabled).toBe(false);
+  fireEvent.click(stepNext());
 };
+/** From step 1 of a fresh Start route: fill the two texts and walk to step `to` (default 4). */
+export function walkTo(lang: L, to: 1 | 2 | 3 | 4 = 4, original = ORIGINAL_EN, jd = JD_EN) {
+  typeInto(resumeBox(lang), original);
+  if (to === 1) return;
+  goNext();
+  typeInto(jdBox(lang), jd);
+  if (to === 2) return;
+  goNext();
+  if (to === 3) return;
+  goNext();
+}
 
 /** A radio, tab, button or option inside <main> (templates, output language, mode, template switch). */
 export function control(name: RegExp | string, root: HTMLElement = main()): HTMLElement {
@@ -143,11 +171,11 @@ export function resetStores() {
   window.location.hash = "";
 }
 
-/** Render the Start route with a key and both texts filled, ready to click Generate. */
-export function startFlow(lang: L, opts: { original?: string; jd?: string; key?: string | null } = {}) {
+/** Render the Start route with a key, fill both texts and walk to step 4 (or `stopAt`), ready to click Generate. */
+export function startFlow(lang: L, opts: { original?: string; jd?: string; key?: string | null; stopAt?: 1 | 2 | 3 | 4 } = {}) {
   if (opts.key !== null) withKey(opts.key ?? FAKE_KEY);
   const view = renderApp(lang);
-  fillTexts(lang, opts.original ?? ORIGINAL_EN, opts.jd ?? JD_EN);
+  walkTo(lang, opts.stopAt ?? 4, opts.original ?? ORIGINAL_EN, opts.jd ?? JD_EN);
   return view;
 }
 
