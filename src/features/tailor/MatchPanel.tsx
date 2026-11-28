@@ -76,18 +76,20 @@ export function MatchPanel(p: MatchPanelProps) {
           </ul>
         </section>
       ) : null}
-      <section className="fgroup">
-        <h3 className="fsub">{t("match.h.strengths")}</h3>
-        {o.strengths.map((s, i) => (
-          <div key={i} className="ffind" data-testid="match-strength">
-            <div className="fq">{s.jdQuote}</div>
-            <div className="fsmall">{s.note}</div>
-            <div className="fsmall">
-              <b>{t("match.how")}</b>: {s.howToTell}
+      {o.strengths.length > 0 ? (
+        <section className="fgroup">
+          <h3 className="fsub">{t("match.h.strengths")}</h3>
+          {o.strengths.map((s, i) => (
+            <div key={i} className="ffind" data-testid="match-strength">
+              <div className="fq">{s.jdQuote}</div>
+              <div className="fsmall">{s.note}</div>
+              <div className="fsmall">
+                <b>{t("match.how")}</b>: {s.howToTell}
+              </div>
             </div>
-          </div>
-        ))}
-      </section>
+          ))}
+        </section>
+      ) : null}
       {o.gaps.length > 0 ? (
         <section className="fgroup">
           <h3 className="fsub">{t("match.h.gaps")}</h3>

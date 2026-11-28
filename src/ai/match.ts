@@ -35,7 +35,7 @@ const STATUSES = ["evidence", "partial", "missing"];
 type Rec = Record<string, unknown>;
 
 /** The problems of a MatchOutput, as "path: message" lines; empty when it is valid. */
-export function matchProblems(root: unknown): string[] {
+export function matchProblems(root: unknown, opts: { checked?: boolean } = {}): string[] {
   const errors: string[] = [];
   const err = (path: string, msg: string): void => {
     if (errors.length < MAX_ERRORS) errors.push(`${path}: ${msg}`);
@@ -73,7 +73,7 @@ export function matchProblems(root: unknown): string[] {
     if ("evidenceQuote" in o) str(o["evidenceQuote"], `${p}.evidenceQuote`, MAX.quote);
     str(o["note"], `${p}.note`, MAX.note);
   });
-  list(top["strengths"], "strengths", 3, 5).forEach((v, i) => {
+  list(top["strengths"], "strengths", opts.checked ? 0 : 3, 5).forEach((v, i) => {
     const p = `strengths[${i}]`;
     const o = obj(v, p, ["jdQuote", "status", "evidenceQuote", "note", "howToTell"]);
     if (!o) return;

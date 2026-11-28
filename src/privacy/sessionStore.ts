@@ -55,7 +55,7 @@ function validResult(r: unknown): boolean {
   if (r.match !== undefined) {
     const m = r.match;
     if (!isObj(m) || Object.keys(m).some((k) => k !== "output" && k !== "dropped")) return false;
-    if (typeof m.dropped !== "number" || !Number.isInteger(m.dropped) || m.dropped < 0 || matchProblems(m.output).length > 0) return false;
+    if (typeof m.dropped !== "number" || !Number.isInteger(m.dropped) || m.dropped < 0 || matchProblems(m.output, { checked: true }).length > 0) return false;
   }
   if (r.base === undefined) return true;
   const b = r.base;
