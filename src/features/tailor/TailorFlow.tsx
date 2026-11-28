@@ -3,6 +3,7 @@ import type { KeyboardEvent, ReactNode } from "react";
 import { AiConsentLine } from "../../app/AiConsentLine.tsx";
 import { AiError } from "../../ai/anthropic.ts";
 import { detectLang, factCheck, unresolvedCount } from "../../ai/factCheck.ts";
+import { checkMatch, runMatch } from "../../ai/match.ts";
 import { TailorCutOffError, TailorInvalidError, runTailor } from "../../ai/tailor.ts";
 import type { OutputLang, TailorMode } from "../../ai/tailor.ts";
 import { DEFAULT_MODEL, MODEL_CHOICES } from "../../ai/settings.ts";
@@ -22,6 +23,7 @@ import { ResumeEditor } from "../editor/ResumeEditor.tsx";
 import { computeFit } from "./fit.tsx";
 import type { Fit } from "./fit.tsx";
 import { KeyArea } from "./KeyArea.tsx";
+import type { MatchState } from "./MatchPanel.tsx";
 import { MODE_KEY, ResultView, TPL_KEY } from "./ResultView.tsx";
 import type { ResultSnapshot } from "./ResultView.tsx";
 
@@ -46,6 +48,7 @@ interface ResultState {
   snapshot: ResultSnapshot;
   base: ResultBase;
   generatedAt: number;
+  match: MatchState | null;
 }
 
 type TFn = ReturnType<typeof useT>;
@@ -61,6 +64,7 @@ function buildResult(output: TailorOutput, base: ResultBase, generatedAt: number
     snapshot: { originalLen: base.original.length, jdLen: base.jd.length, lang: base.lang, mode: base.mode, modelName },
     base,
     generatedAt,
+    match: null,
   };
 }
 
@@ -86,7 +90,7 @@ function boot(uiLang: OutputLang, t: TFn): Boot {
     let fit: Fit | null = null;
     if (s.result) {
       const base = s.result.base ?? { original: s.original, jd: s.jd, lang: o.lang, mode: o.mode, model: o.model };
-      result = buildResult(s.result.output, base, s.result.generatedAt, t);
+      result = { ...buildResult(s.result.output, base, s.result.generatedAt, t), match: s.result.match ?? null };
       fit = computeFit(result.output, result.findings, s.result.decisions, [], result.original, t("flow.addedHeading"), tpl, result.lang);
     }
     const step: Step = s.step === 5 && (interrupted || result === null) ? 4 : s.step;
@@ -343,6 +347,11 @@ export function TailorFlow() {
   const saveNow = useRef<(() => void) | null>(null);
   const [editing, setEditing] = useState<Resume | null>(null);
   const busy = useRef(false);
+  const matchBusy = useRef(false);
+  const matchCtl = useRef<AbortController | null>(null);
+  const [matchRunning, setMatchRunning] = useState(false);
+  const [matchAsking, setMatchAsking] = useState(false);
+  const [matchError, setMatchError] = useState<StrKey | null>(null);
   const ctl = useRef<AbortController | null>(null);
   const root = useRef<HTMLDivElement>(null);
   const shownStep = useRef(step);
@@ -386,7 +395,7 @@ export function TailorFlow() {
         return;
       }
       const s: Session = { version: 1, savedAt: Date.now(), original, jd, options: { template: tpl, lang: outLang, mode, model: cfg.model }, step };
-      if (result) s.result = { output: result.output, decisions, generatedAt: result.generatedAt, base: result.base };
+      if (result) s.result = { output: result.output, decisions, generatedAt: result.generatedAt, base: result.base, ...(result.match ? { match: result.match } : {}) };
       if (running) s.pending = true;
       try {
         saveSession(s);
@@ -408,6 +417,7 @@ export function TailorFlow() {
   useEffect(
     () => () => {
       ctl.current?.abort();
+      matchCtl.current?.abort();
     },
     [],
   );
@@ -420,6 +430,8 @@ export function TailorFlow() {
     setChars(0);
     setAsking(false);
     setInterrupted(false);
+    stopMatch();
+    setMatchError(null);
     setPhase("running");
     go(5);
     const c = new AbortController();
@@ -455,6 +467,42 @@ export function TailorFlow() {
     }
   }
 
+  function stopMatch() {
+    matchCtl.current?.abort();
+    matchCtl.current = null;
+    matchBusy.current = false;
+    setMatchRunning(false);
+    setMatchAsking(false);
+  }
+
+  async function generateMatch() {
+    if (matchBusy.current || !result || cfg.key.trim() === "") return;
+    matchBusy.current = true;
+    setMatchError(null);
+    setMatchRunning(true);
+    const c = new AbortController();
+    matchCtl.current = c;
+    const { original: orig, jd: jdText } = result.base;
+    try {
+      const output = await runMatch({ key: cfg.key, model: result.base.model, original: orig, jd: jdText, lang: result.lang, signal: c.signal });
+      if (c.signal.aborted) return;
+      const { kept, dropped } = checkMatch(orig, jdText, output);
+      setResult((r) => (r ? { ...r, match: { output: kept, dropped } } : r));
+    } catch (e) {
+      if (c.signal.aborted) return;
+      if (e instanceof TailorCutOffError) setMatchError("flow.err.cutoff");
+      else if (e instanceof TailorInvalidError) setMatchError("flow.err.unreadable");
+      else setMatchError(`ai.msg.${e instanceof AiError ? e.kind : "network"}` as StrKey);
+    } finally {
+      if (matchCtl.current === c) {
+        matchCtl.current = null;
+        matchBusy.current = false;
+        setMatchRunning(false);
+        setMatchAsking(false);
+      }
+    }
+  }
+
   function confirmCancel() {
     ctl.current?.abort();
     ctl.current = null;
@@ -466,6 +514,8 @@ export function TailorFlow() {
 
   /** Clear all: this tab's session, and the page back to empty. The remembered key is asked about. */
   function clearEverything(includeKey = false) {
+    stopMatch();
+    setMatchError(null);
     ctl.current?.abort();
     ctl.current = null;
     busy.current = false;
@@ -488,6 +538,7 @@ export function TailorFlow() {
   }
 
   function jump(s: Step) {
+    stopMatch();
     setPhase("input");
     go(s);
   }
@@ -715,6 +766,7 @@ export function TailorFlow() {
             onTemplate={changeTemplate}
             over={fit?.over ?? false}
             onPutBack={putBackLine}
+            match={{ match: result.match, running: matchRunning, error: matchError, onGenerate: () => void generateMatch(), onCancel: () => setMatchAsking(true) }}
             onEditInput={() => jump(1)}
             onEditResult={(r) => {
               setEditing(r);
@@ -722,6 +774,7 @@ export function TailorFlow() {
             }}
           />
         </div>
+        {matchAsking && matchRunning ? <CancelDialog onKeep={() => setMatchAsking(false)} onConfirm={stopMatch} /> : null}
       </div>
     );
   }
