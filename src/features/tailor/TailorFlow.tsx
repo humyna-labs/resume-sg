@@ -2,14 +2,17 @@ import { useEffect, useId, useReducer, useRef, useState } from "react";
 import type { KeyboardEvent, ReactNode } from "react";
 import { AiConsentLine } from "../../app/AiConsentLine.tsx";
 import { AiError } from "../../ai/anthropic.ts";
-import { detectLang, factCheck } from "../../ai/factCheck.ts";
+import { detectLang, factCheck, unresolvedCount } from "../../ai/factCheck.ts";
 import { TailorCutOffError, TailorInvalidError, runTailor } from "../../ai/tailor.ts";
 import type { OutputLang, TailorMode } from "../../ai/tailor.ts";
-import { MODEL_CHOICES } from "../../ai/settings.ts";
+import { DEFAULT_MODEL, MODEL_CHOICES } from "../../ai/settings.ts";
 import type { Decision, Finding, TailorOutput } from "../../ai/types.ts";
 import type { StrKey } from "../../i18n/en.ts";
 import { useLang, useT } from "../../i18n/index.ts";
+import { clearAll, clearSession, loadSession, saveSession } from "../../privacy/sessionStore.ts";
+import type { Session } from "../../privacy/sessionStore.ts";
 import type { Resume } from "../../resume/model.ts";
+import { isRemembered } from "../../security/keyStore.ts";
 import { DEFAULT_TEMPLATE, TEMPLATES } from "../../templates/index.ts";
 import type { TemplateId } from "../../templates/index.ts";
 import { useAiConfig } from "../ai-settings/useAiConfig.ts";
@@ -27,12 +30,112 @@ const MODES: TailorMode[] = ["balanced", "results-first", "career-change"];
 const STEP_AT = [0, 2, 20, 40];
 const fmt = (n: number): string => n.toLocaleString("en-US");
 
+interface ResultBase {
+  original: string;
+  jd: string;
+  lang: OutputLang;
+  mode: TailorMode;
+  model: string;
+}
+
 interface ResultState {
   output: TailorOutput;
   findings: Finding[];
   original: string;
   lang: OutputLang;
   snapshot: ResultSnapshot;
+  base: ResultBase;
+  generatedAt: number;
+}
+
+type TFn = ReturnType<typeof useT>;
+
+function buildResult(output: TailorOutput, base: ResultBase, generatedAt: number, t: TFn): ResultState {
+  const known = MODEL_CHOICES.find((m) => m.value === base.model);
+  const modelName = known ? t(known.labelKey).replace(/\s*[（(].*$/, "") : base.model;
+  return {
+    output,
+    findings: factCheck(base.original, output, { outputLang: base.lang }),
+    original: base.original,
+    lang: base.lang,
+    snapshot: { originalLen: base.original.length, jdLen: base.jd.length, lang: base.lang, mode: base.mode, modelName },
+    base,
+    generatedAt,
+  };
+}
+
+interface Boot {
+  wizard: WizardState;
+  model: string;
+  interrupted: boolean;
+  result: ResultState | null;
+  decisions: Record<string, Decision>;
+  fit: Fit | null;
+}
+
+/** What the page starts from: the session of this tab, or empty. A request cut off by a reload is not resumed. */
+function boot(uiLang: OutputLang, t: TFn): Boot {
+  const empty: Boot = { wizard: initialWizard(uiLang), model: DEFAULT_MODEL, interrupted: false, result: null, decisions: {}, fit: null };
+  const s = loadSession();
+  if (s === null) return empty;
+  try {
+    const o = s.options;
+    const tpl = TEMPLATES.find((x) => x.id === o.template)?.id ?? DEFAULT_TEMPLATE;
+    const interrupted = s.pending === true;
+    let result: ResultState | null = null;
+    let fit: Fit | null = null;
+    if (s.result) {
+      const base = s.result.base ?? { original: s.original, jd: s.jd, lang: o.lang, mode: o.mode, model: o.model };
+      result = buildResult(s.result.output, base, s.result.generatedAt, t);
+      fit = computeFit(result.output, result.findings, s.result.decisions, [], result.original, t("flow.addedHeading"), tpl, result.lang);
+    }
+    const step: Step = s.step === 5 && (interrupted || result === null) ? 4 : s.step;
+    return {
+      wizard: { step, original: s.original, jd: s.jd, tpl, lang: o.lang, mode: o.mode },
+      model: o.model,
+      interrupted,
+      result,
+      decisions: s.result?.decisions ?? {},
+      fit,
+    };
+  } catch {
+    clearSession();
+    return empty;
+  }
+}
+
+const SAVE_DELAY_MS = 500;
+const nowMs = (): number => Date.now();
+
+function KeyDialog({ onKeep, onDelete }: { onKeep: () => void; onDelete: () => void }) {
+  const t = useT();
+  const keepRef = useRef<HTMLButtonElement>(null);
+  const deleteRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    keepRef.current?.focus();
+  }, []);
+  function onKey(e: KeyboardEvent) {
+    if (e.key === "Escape") onKeep();
+    if (e.key === "Tab") {
+      e.preventDefault();
+      (document.activeElement === keepRef.current ? deleteRef.current : keepRef.current)?.focus();
+    }
+  }
+  return (
+    <div className="fmodal">
+      <div className="fdialog" role="alertdialog" aria-modal="true" aria-labelledby="fkey-ask" onKeyDown={onKey}>
+        <p id="fkey-ask">{t("wz.clearKey.ask")}</p>
+        <div className="frow end">
+          <button type="button" ref={deleteRef} className="btn btn-sm btn-secondary" data-testid="clear-key-confirm" onClick={onDelete}>
+            {t("wz.clearKey.yes")}
+          </button>
+          <button type="button" ref={keepRef} className="btn btn-sm btn-primary" data-testid="clear-key-keep" onClick={onKeep}>
+            {t("wz.clearKey.no")}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function Thumb({ id }: { id: TemplateId }) {
@@ -222,18 +325,22 @@ function Footer({ step, nextLabel, ok, hint, onBack, onNext }: {
 export function TailorFlow() {
   const t = useT();
   const { lang: uiLang } = useLang();
-  const cfg = useAiConfig();
-  const [w, dispatch] = useReducer(wizardReducer, uiLang, initialWizard);
+  const [start] = useState(() => boot(uiLang, t));
+  const cfg = useAiConfig(start.model);
+  const [w, dispatch] = useReducer(wizardReducer, start.wizard);
   const { step, original, jd, tpl, lang: outLang, mode } = w;
-  const [phase, setPhase] = useState<Phase>("input");
+  const [phase, setPhase] = useState<Phase>(start.wizard.step === 5 && start.result ? "result" : "input");
+  const [interrupted, setInterrupted] = useState(start.interrupted);
+  const [askKey, setAskKey] = useState(false);
   const [error, setError] = useState<StrKey | null>(null);
   const [details, setDetails] = useState<{ cause: string; tokens: number | null } | null>(null);
   const [chars, setChars] = useState(0);
   const [asking, setAsking] = useState(false);
-  const [result, setResult] = useState<ResultState | null>(null);
-  const [decisions, setDecisions] = useState<Record<string, Decision>>({});
+  const [result, setResult] = useState<ResultState | null>(start.result);
+  const [decisions, setDecisions] = useState<Record<string, Decision>>(start.decisions);
   const [putBack, setPutBack] = useState<string[]>([]);
-  const [fit, setFit] = useState<Fit | null>(null);
+  const [fit, setFit] = useState<Fit | null>(start.fit);
+  const saveNow = useRef<(() => void) | null>(null);
   const [editing, setEditing] = useState<Resume | null>(null);
   const busy = useRef(false);
   const ctl = useRef<AbortController | null>(null);
@@ -268,6 +375,35 @@ export function TailorFlow() {
     return () => window.removeEventListener("beforeunload", warn);
   }, [phase]);
 
+  // Autosave to this tab's sessionStorage, debounced; flushed when the page is hidden.
+  useEffect(() => {
+    const run = () => {
+      saveNow.current = null;
+      const pristine =
+        original === "" && jd === "" && result === null && step === 1 && tpl === DEFAULT_TEMPLATE && mode === "balanced" && cfg.model === DEFAULT_MODEL;
+      if (pristine) {
+        clearSession();
+        return;
+      }
+      const s: Session = { version: 1, savedAt: Date.now(), original, jd, options: { template: tpl, lang: outLang, mode, model: cfg.model }, step };
+      if (result) s.result = { output: result.output, decisions, generatedAt: result.generatedAt, base: result.base };
+      if (running) s.pending = true;
+      try {
+        saveSession(s);
+      } catch {
+        clearSession(); // the text equals the key: never stored
+      }
+    };
+    saveNow.current = run;
+    const id = setTimeout(run, SAVE_DELAY_MS);
+    return () => clearTimeout(id);
+  }, [original, jd, tpl, outLang, mode, cfg.model, step, result, decisions, running]);
+  useEffect(() => {
+    const flush = () => saveNow.current?.();
+    window.addEventListener("pagehide", flush);
+    return () => window.removeEventListener("pagehide", flush);
+  }, []);
+
   // Leaving the page drops the request.
   useEffect(
     () => () => {
@@ -283,6 +419,7 @@ export function TailorFlow() {
     setDetails(null);
     setChars(0);
     setAsking(false);
+    setInterrupted(false);
     setPhase("running");
     go(5);
     const c = new AbortController();
@@ -291,15 +428,7 @@ export function TailorFlow() {
     try {
       const output = await runTailor(run);
       if (c.signal.aborted) return;
-      const known = MODEL_CHOICES.find((m) => m.value === cfg.model);
-      const modelName = known ? t(known.labelKey).replace(/\s*[（(].*$/, "") : cfg.model;
-      const res: ResultState = {
-        output,
-        findings: factCheck(original, output, { outputLang: outLang }),
-        original,
-        lang: outLang,
-        snapshot: { originalLen: original.length, jdLen: jd.length, lang: outLang, mode, modelName },
-      };
+      const res = buildResult(output, { original, jd, lang: outLang, mode, model: cfg.model }, nowMs(), t);
       setFit(refit(res, {}, [], tpl));
       setResult(res);
       setDecisions({});
@@ -333,6 +462,28 @@ export function TailorFlow() {
     setAsking(false);
     setPhase("input");
     go(4);
+  }
+
+  /** Clear all: this tab's session, and the page back to empty. The remembered key is asked about. */
+  function clearEverything() {
+    ctl.current?.abort();
+    ctl.current = null;
+    busy.current = false;
+    clearAll({ includeKey: false });
+    dispatch({ type: "reset", lang: uiLang });
+    cfg.resetModel();
+    setPhase("input");
+    setError(null);
+    setDetails(null);
+    setChars(0);
+    setAsking(false);
+    setInterrupted(false);
+    setResult(null);
+    setDecisions({});
+    setPutBack([]);
+    setFit(null);
+    setEditing(null);
+    setAskKey(isRemembered());
   }
 
   function jump(s: Step) {
@@ -371,7 +522,7 @@ export function TailorFlow() {
         <button type="button" className="btn btn-sm btn-secondary" onClick={() => setPhase("result")}>
           {t("flow.back")}
         </button>
-        <ResumeEditor initial={editing} />
+        <ResumeEditor initial={editing} openItems={result ? unresolvedCount(result.findings, decisions) : 0} />
       </div>
     );
   }
@@ -510,6 +661,11 @@ export function TailorFlow() {
           {row("options", t("wz.sum.options"), `${t(TPL_KEY[tpl])} · ${outLang === "zh" ? t("tpl.chinese") : t("tpl.english")} · ${t(MODE_KEY[mode])}`, 3)}
         </div>
         <KeyArea cfg={cfg} />
+        {interrupted ? (
+          <p className="fnote" role="status" data-testid="interrupted">
+            {t("wz.interrupted")}
+          </p>
+        ) : null}
         {error ? (
           <p className="field-error" role="alert">
             {t(error)}
@@ -600,6 +756,21 @@ export function TailorFlow() {
           </>
         ) : null}
       </section>
+      <p className="fsmall fcenter" data-testid="autosave-note">
+        {t("wz.autosave.note")}{" "}
+        <button type="button" className="btn btn-sm btn-ghost" onClick={clearEverything}>
+          {t("wz.clearAll")}
+        </button>
+      </p>
+      {askKey ? (
+        <KeyDialog
+          onKeep={() => setAskKey(false)}
+          onDelete={() => {
+            cfg.forgetKey();
+            setAskKey(false);
+          }}
+        />
+      ) : null}
     </div>
   );
 }

@@ -48,8 +48,8 @@ export const TXT = {
     editInput: "Edit input and regenerate",
     remove: "Remove it",
     keep: "Keep, my original left it out",
-    exportPdf: /export pdf/i,
-    exportMd: /export markdown/i,
+    exportPdf: /save as pdf/i,
+    exportMd: /download markdown/i,
   },
   zh: {
     resume: "你的原始简历",
@@ -64,8 +64,8 @@ export const TXT = {
     editInput: "修改输入后重新生成",
     remove: "删掉这处",
     keep: "我确认原简历遗漏了，保留",
-    exportPdf: /导出 ?PDF/i,
-    exportMd: /导出 ?Markdown/i,
+    exportPdf: /另存为 ?PDF/i,
+    exportMd: /下载 ?Markdown/i,
   },
 } as const;
 

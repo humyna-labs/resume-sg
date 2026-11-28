@@ -173,34 +173,40 @@ for (const ui of ["en", "zh"] as const) {
     });
   });
 
-  describe(`criterion 8 (H): export stays disabled with a hint until #12, UI ${ui}`, () => {
+  describe(`criterion 8 (H), changed by resume-sg#12: export is enabled once no red item is open, no hint, UI ${ui}`, () => {
     const exportBtns = () => [
       within(main()).getByRole("button", { name: TXT[ui].exportPdf }) as HTMLButtonElement,
       within(main()).getByRole("button", { name: TXT[ui].exportMd }) as HTMLButtonElement,
     ];
     const toolbar = () => norm(screen.getByTestId("tailor-toolbar").textContent ?? "");
 
-    it("a faithful result with no open item: both buttons disabled and the hint shown", async () => {
+    it("a faithful result with no open item: both buttons enabled and no 'coming soon' hint", async () => {
       await generateResult(ui, validOutput());
-      for (const b of exportBtns()) expect(b.disabled).toBe(true);
-      expect(toolbar()).toContain(t.hint);
+      for (const b of exportBtns()) expect(b.disabled).toBe(false);
+      expect(toolbar()).not.toContain(t.hint);
     });
-    it("a result with a red item: disabled with the hint, and still disabled after the item is handled", async () => {
+    it("a result with a red item: disabled, and enabled once the item is handled; the hint never shows", async () => {
       const out = redOutput();
       const red = factCheck(ORIGINAL_EN, out, { outputLang: "en" }).find((f) => f.level === "red")!;
       await generateResult(ui, out);
       for (const b of exportBtns()) expect(b.disabled).toBe(true);
-      expect(toolbar()).toContain(t.hint);
+      expect(toolbar()).not.toContain(t.hint);
       fireEvent.click(within(card(red.id)).getByRole("button", { name: TXT[ui].keep }));
       await waitFor(() => expect(mainText()).toContain(norm(ui === "en" ? "Employers, titles, dates, degrees and other numbers were all found in your original" : "公司、职位、日期、学历和其他数字都能在原简历里找到")));
-      for (const b of exportBtns()) expect(b.disabled).toBe(true);
-      expect(toolbar()).toContain(t.hint);
+      for (const b of exportBtns()) expect(b.disabled).toBe(false);
+      expect(toolbar()).not.toContain(t.hint);
     });
-    it("clicking a disabled export button does nothing (no download, no navigation)", async () => {
-      await generateResult(ui, validOutput());
+    it("clicking a disabled export button (red item open) does nothing: no print, no download, no navigation", async () => {
+      const print = vi.fn();
+      vi.stubGlobal("print", print);
+      const create = vi.fn(() => "blob:x");
+      Object.defineProperty(URL, "createObjectURL", { configurable: true, writable: true, value: create });
+      await generateResult(ui, redOutput());
       const before = window.location.hash;
       for (const b of exportBtns()) fireEvent.click(b);
       expect(window.location.hash).toBe(before);
+      expect(print).not.toHaveBeenCalled();
+      expect(create).not.toHaveBeenCalled();
     });
   });
 }

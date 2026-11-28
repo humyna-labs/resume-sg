@@ -8,6 +8,7 @@ import type { Resume } from "../../resume/model.ts";
 import { TEMPLATES } from "../../templates/index.ts";
 import type { TemplateId } from "../../templates/index.ts";
 import { PAGE_H } from "../../layout/pageFit.ts";
+import { ExportButtons } from "../../export/ExportButtons.tsx";
 import { TemplateView } from "../templates/TemplateView.tsx";
 import { toResume } from "./apply.ts";
 import type { OutputLang, TailorMode } from "../../ai/tailor.ts";
@@ -332,14 +333,13 @@ export function ResultView(p: ResultProps) {
             ))}
           </div>
           <span className="fpages" data-testid="page-count">{" "}{pages === 1 ? t("flow.page1") : fill(t("flow.pages"), pages)}</span>
-          <button type="button" className="btn btn-sm btn-secondary" disabled>
-            {t("flow.export.pdf")}
-          </button>
-          <button type="button" className="btn btn-sm btn-secondary" disabled>
-            {t("flow.export.md")}
-          </button>
-          <span className="fsmall fhint">{t("flow.export.soon")}</span>
+          <ExportButtons resume={resume} lang={p.snapshot.lang} open={open} />
         </div>
+        {open > 0 ? (
+          <p className="print-notice" data-print-notice>
+            {t("flow.printNotice")}
+          </p>
+        ) : null}
         {p.over ? (
           <p className="field-error fwarn" role="status">
             {t("flow.overTwo")}

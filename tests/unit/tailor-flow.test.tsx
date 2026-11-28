@@ -405,10 +405,10 @@ for (const lang of LANGS) {
 
       click(within(f).getByRole("button", { name: c.keep }));
       expect(mainText()).toContain(norm(t.green));
-      // Changed by resume-sg#47 (H): until #12 merges, export stays disabled with a hint, whatever is open
-      expect((within(main()).getByRole("button", { name: c.exportPdf }) as HTMLButtonElement).disabled).toBe(true);
-      expect((within(main()).getByRole("button", { name: c.exportMd }) as HTMLButtonElement).disabled).toBe(true);
-      expect(mainText()).toContain(lang === "en" ? "Export coming soon" : "导出即将上线");
+      // Changed by resume-sg#12: export is enabled once no red item is open, and the hint is gone
+      expect((within(main()).getByRole("button", { name: c.exportPdf }) as HTMLButtonElement).disabled).toBe(false);
+      expect((within(main()).getByRole("button", { name: c.exportMd }) as HTMLButtonElement).disabled).toBe(false);
+      expect(mainText()).not.toContain(lang === "en" ? "Export coming soon" : "导出即将上线");
       expect(screen.getByTestId("resume-preview").textContent).toContain("30%");
     });
     it("Remove it deletes that text from the result and counts as handled", async () => {
@@ -419,14 +419,14 @@ for (const lang of LANGS) {
       click(within(finding((red[0] as { id: string }).id) as HTMLElement).getByRole("button", { name: c.remove }));
       expect(screen.getByTestId("resume-preview").textContent).not.toContain("30%");
       expect(mainText()).toContain(norm(t.green));
-      expect((within(main()).getByRole("button", { name: c.exportPdf }) as HTMLButtonElement).disabled).toBe(true); // #47 (H)
+      expect((within(main()).getByRole("button", { name: c.exportPdf }) as HTMLButtonElement).disabled).toBe(false); // #12
     });
-    it("a faithful result: green line at once, no red item, export disabled with the hint until #12 (#47 H)", async () => {
+    it("a faithful result: green line at once, no red item, both export buttons enabled and no hint (#12)", async () => {
       await generateResult(lang, validOutput());
       expect(mainText()).toContain(norm(t.green));
-      expect((within(main()).getByRole("button", { name: c.exportPdf }) as HTMLButtonElement).disabled).toBe(true);
-      expect((within(main()).getByRole("button", { name: c.exportMd }) as HTMLButtonElement).disabled).toBe(true);
-      expect(mainText()).toContain(lang === "en" ? "Export coming soon" : "导出即将上线");
+      expect((within(main()).getByRole("button", { name: c.exportPdf }) as HTMLButtonElement).disabled).toBe(false);
+      expect((within(main()).getByRole("button", { name: c.exportMd }) as HTMLButtonElement).disabled).toBe(false);
+      expect(mainText()).not.toContain(lang === "en" ? "Export coming soon" : "导出即将上线");
       expect(document.querySelectorAll("[data-finding-id]").length).toBe(
         factCheck(ORIGINAL_EN, validOutput(), { outputLang: "en" }).length,
       );

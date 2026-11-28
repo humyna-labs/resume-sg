@@ -317,7 +317,11 @@ describe("memory only (unit part of criterion 8)", () => {
     type(fields(/^name$/i)[0]!, "Sam Sample");
     click(/^add experience$/i);
     expect(localStorage.length).toBe(0);
-    expect(sessionStorage.length).toBe(0);
+    // openEditor goes through the flow, so the autosave entry may exist; the editor itself adds nothing else.
+    expect(Object.keys(sessionStorage).filter((k) => k !== "jd2cv.session")).toEqual([]);
+    for (let i = 0; i < sessionStorage.length; i++) {
+      expect(sessionStorage.getItem(sessionStorage.key(i) as string)).not.toContain("Sam Sample");
+    }
     expect(document.cookie).toBe("");
   });
 });

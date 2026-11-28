@@ -1,0 +1,36 @@
+/* Export (resume-sg#12): print shows the resume root and nothing else, on A4. */
+@page {
+  size: A4;
+  margin: 0;
+}
+
+/* Not shown on screen; Ctrl+P with red items open prints this one line instead of the resume. */
+[data-print-notice] {
+  display: none;
+}
+
+@media print {
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    background: #fff;
+  }
+  body :not([data-print-root]):not([data-print-root] *):not(:has([data-print-root])) {
+    display: none !important;
+  }
+  [data-print-root] mark {
+    background: none !important;
+    color: inherit !important;
+  }
+  /* A red item is open: the resume does not print, the notice does (the extra attributes outrank the hide rule). */
+  body:has([data-print-notice]) [data-print-root] {
+    display: none !important;
+  }
+  html body [data-print-notice][data-print-notice][data-print-notice][data-print-notice][data-print-notice] {
+    display: block !important;
+    margin: 24pt;
+    font-size: 14pt;
+    color: #000;
+  }
+}
