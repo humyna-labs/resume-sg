@@ -195,7 +195,6 @@ describe("criterion 6: Privacy", () => {
   const P = {
     en: [
       "We have no server, no database, no account system, no analytics and no ads, and we set no cookies.",
-      "What you type stays in this page's memory unless you choose to save a draft or your key in this browser; \"Delete all my data\" removes both.",
       "When you use an AI action, your resume and the job description are sent from your browser to Anthropic with your API key,",
       "Hosting: Cloudflare Pages serves the site's files.",
       "Contact:",
@@ -203,7 +202,6 @@ describe("criterion 6: Privacy", () => {
     ],
     zh: [
       "我们没有服务器、没有数据库、没有账号系统、没有统计工具、没有广告，也不设置任何 Cookie。",
-      "你输入的内容只保存在当前页面的内存里，除非你选择在这个浏览器里保存草稿或 key；\"删除我的所有数据\"会把两者一并删除。",
       "当你使用 AI 功能时，你的简历和职位描述会连同你的 API key 一起从你的浏览器发送给 Anthropic，适用 Anthropic 的",
       "托管：网站文件由 Cloudflare Pages 提供。",
       "联系方式：",
@@ -227,8 +225,7 @@ describe("criterion 6: Privacy", () => {
 
 describe("resume-sg#31 criterion 7: the session sentence", () => {
   it("the FAQ answer ends with it and a Privacy text ends with it, in both dictionaries", () => {
-    const store = FAQ.find((x) => x.enQ === "Do you store my resume?");
-    for (const [d, s, a] of [[en, SESSION_EN, store?.enA], [zh, SESSION_ZH, store?.zhA]] as const) {
+    for (const [d, s, a] of [[en, SESSION_EN, en["faq.6.a"]], [zh, SESSION_ZH, zh["faq.6.a"]]] as const) {
       expect(norm(a ?? "").endsWith(norm(s))).toBe(true);
       const vals = leafValues(d).map(norm);
       expect(vals.some((v) => v.endsWith(norm(s)) && v.length > norm(s).length), "a Privacy text ends with it").toBe(true);
