@@ -60,7 +60,7 @@ for (const ui of ["en", "zh"] as const) {
 
   describe(`the green line per mode, UI ${ui}`, () => {
     it("a faithful same-language run shows flow.green and not flow.greenCross", async () => {
-      await generateResult(ui, validOutput());
+      await generateResult(ui, validOutput(), { outputLang: "English" });
       expect(mainText()).toContain(norm(t.green));
       expect(mainText()).not.toContain(norm(t.greenCross));
       expect(screen.queryByTestId("finding-group-translated")).toBeNull();
@@ -106,7 +106,7 @@ for (const ui of ["en", "zh"] as const) {
     });
 
     it("a same-language run never shows the Translated group", async () => {
-      await generateResult(ui, validOutput());
+      await generateResult(ui, validOutput(), { outputLang: "English" });
       expect(screen.queryByTestId("finding-group-translated")).toBeNull();
     });
   });
@@ -135,7 +135,7 @@ for (const ui of ["en", "zh"] as const) {
       out.resume.experience[0]!.bullets[0] = { text: "Led a team of 5 engineers.", source: ORIGINAL_EN };
       const red = factCheck(ORIGINAL_EN, out, { outputLang: "en" }).filter((f) => f.level === "red");
       expect(red.map((f) => [f.kind, f.value])).toEqual([["number", "5"]]);
-      await generateResult(ui, out);
+      await generateResult(ui, out, { outputLang: "English" });
       expect(card(red[0]!.id)).toBeTruthy();
       expect(mainText()).not.toContain(norm(t.green));
     });

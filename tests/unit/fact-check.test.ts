@@ -55,8 +55,8 @@ describe("criterion 1 (a): sources occur in the original", () => {
     const original = "Built   the\tpayment\nAPI for   merchants\n\nShipped it";
     const { out } = bulletCase("Built the payment API", "Built the payment API");
     out.resume.experience = [];
-    out.resume.certificates = [{ text: "x", source: "Built the payment API" }];
-    out.notIncluded = [{ source: "  API for merchants  Shipped\nit " }];
+    out.resume.certificates = [{ text: "x", source: "Built the  payment" }]; // #52: inside one line, whole line
+    out.notIncluded = [{ source: "  API for   merchants " }]; // #52: inside one line, whole line
     expect(kinds(factCheck(original, out), "source")).toEqual([]);
   });
 

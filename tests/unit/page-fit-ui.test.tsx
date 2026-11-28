@@ -93,7 +93,7 @@ const listItems = (panel: ReturnType<typeof within>): HTMLElement[] => panel.que
 async function run(lang: L, output: TailorOutput, original: string, px: number) {
   stubLayout(px);
   scriptedApi([() => apiOutput(output)]);
-  startFlow(lang, { original });
+  startFlow(lang, { original, outputLang: "English" });
   fireEvent.click(generateBtn(lang));
   await screen.findByTestId("tailor-result", undefined, { timeout: 9000 });
 }

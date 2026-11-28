@@ -90,7 +90,7 @@ for (const ui of ["en", "zh"] as const) {
 
   describe(`criterion 3: Download Markdown, UI ${ui}`, () => {
     it("the buttons carry the new labels in the toolbar", async () => {
-      await generateResult(ui, validOutput());
+      await generateResult(ui, validOutput(), { outputLang: "English" });
       expect(within(toolbar()).getByRole("button", { name: t.pdf })).toBeTruthy();
       expect(within(toolbar()).getByRole("button", { name: t.md })).toBeTruthy();
     });
@@ -126,7 +126,7 @@ for (const ui of ["en", "zh"] as const) {
       stubDownload();
       const out = redOutput();
       const red = factCheck(ORIGINAL_EN, out, { outputLang: "en" }).find((f) => f.level === "red")!;
-      await generateResult(ui, out);
+      await generateResult(ui, out, { outputLang: "English" });
       fireEvent.click(within(card(red.id)).getByRole("button", { name: TXT[ui].remove }));
       fireEvent.click(mdBtn(ui));
       const text = await readBlob(created[0]!.blob);
@@ -138,7 +138,7 @@ for (const ui of ["en", "zh"] as const) {
     it("calls window.print() exactly once and creates no download", async () => {
       stubDownload();
       const print = vi.spyOn(window, "print").mockImplementation(() => undefined);
-      await generateResult(ui, validOutput());
+      await generateResult(ui, validOutput(), { outputLang: "English" });
       expect(print).not.toHaveBeenCalled();
       fireEvent.click(pdfBtn(ui));
       expect(print).toHaveBeenCalledTimes(1);
@@ -151,7 +151,7 @@ for (const ui of ["en", "zh"] as const) {
       const out = redOutput();
       const findings = factCheck(ORIGINAL_EN, out, { outputLang: "en" });
       const red = findings.find((f) => f.level === "red")!;
-      await generateResult(ui, out);
+      await generateResult(ui, out, { outputLang: "English" });
       for (const b of [pdfBtn(ui), mdBtn(ui)]) {
         expect(b.disabled).toBe(true);
         expect(reasonOf(b)).toContain(REASON[ui]);
@@ -165,7 +165,7 @@ for (const ui of ["en", "zh"] as const) {
     it("removing the red text also enables export; Undo closes the gate again", async () => {
       const out = redOutput();
       const red = factCheck(ORIGINAL_EN, out, { outputLang: "en" }).find((f) => f.level === "red")!;
-      await generateResult(ui, out);
+      await generateResult(ui, out, { outputLang: "English" });
       fireEvent.click(within(card(red.id)).getByRole("button", { name: TXT[ui].remove }));
       expect(pdfBtn(ui).disabled).toBe(false);
       fireEvent.click(within(card(red.id)).getByRole("button", { name: ui === "en" ? "Undo" : "撤销" }));
@@ -176,7 +176,7 @@ for (const ui of ["en", "zh"] as const) {
     it("a disabled button does nothing when clicked: no print, no download", async () => {
       stubDownload();
       const print = vi.spyOn(window, "print").mockImplementation(() => undefined);
-      await generateResult(ui, redOutput());
+      await generateResult(ui, redOutput(), { outputLang: "English" });
       fireEvent.click(pdfBtn(ui));
       fireEvent.click(mdBtn(ui));
       expect(print).not.toHaveBeenCalled();
@@ -190,7 +190,7 @@ for (const ui of ["en", "zh"] as const) {
     });
 
     it("the old 'coming soon' hint is gone", async () => {
-      await generateResult(ui, redOutput());
+      await generateResult(ui, redOutput(), { outputLang: "English" });
       expect(mainText()).not.toContain("Export coming soon");
       expect(mainText()).not.toContain("导出即将上线");
     });
@@ -201,7 +201,7 @@ for (const ui of ["en", "zh"] as const) {
     it("is in the page while a red item is open, outside the print root, and gone when none is open", async () => {
       const out = redOutput();
       const red = factCheck(ORIGINAL_EN, out, { outputLang: "en" }).find((f) => f.level === "red")!;
-      await generateResult(ui, out);
+      await generateResult(ui, out, { outputLang: "English" });
       expect(notices()).toHaveLength(1);
       expect(notices()[0]!.closest("[data-print-root]")).toBeNull();
       expect(document.querySelectorAll("[data-print-root]").length).toBeGreaterThanOrEqual(1);
@@ -209,7 +209,7 @@ for (const ui of ["en", "zh"] as const) {
       await waitFor(() => expect(notices()).toHaveLength(0));
     });
     it("is not in the page for a faithful result", async () => {
-      await generateResult(ui, validOutput());
+      await generateResult(ui, validOutput(), { outputLang: "English" });
       expect(notices()).toHaveLength(0);
     });
   });

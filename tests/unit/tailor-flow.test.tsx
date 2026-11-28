@@ -378,7 +378,7 @@ for (const lang of LANGS) {
       const findings = factCheck(ORIGINAL_EN, out, { outputLang: "en" });
       const red = findings.filter((f) => f.level === "red");
       expect(red).toHaveLength(1);
-      await generateResult(lang, out);
+      await generateResult(lang, out, { outputLang: "English" });
       const tabs = within(main()).getAllByRole("tab");
       expect(tabs.map((x) => x.textContent ?? "")).toEqual(
         expect.arrayContaining([
@@ -418,7 +418,7 @@ for (const lang of LANGS) {
     it("Remove it deletes that text from the result and counts as handled", async () => {
       const out = redOutput();
       const red = factCheck(ORIGINAL_EN, out, { outputLang: "en" }).filter((f) => f.level === "red");
-      await generateResult(lang, out);
+      await generateResult(lang, out, { outputLang: "English" });
       expect(screen.getByTestId("resume-preview").textContent).toContain("30%");
       click(within(finding((red[0] as { id: string }).id) as HTMLElement).getByRole("button", { name: c.remove }));
       expect(screen.getByTestId("resume-preview").textContent).not.toContain("30%");
@@ -426,7 +426,7 @@ for (const lang of LANGS) {
       expect((within(main()).getByRole("button", { name: c.exportPdf }) as HTMLButtonElement).disabled).toBe(false); // #12
     });
     it("a faithful result: green line at once, no red item, both export buttons enabled and no hint (#12)", async () => {
-      await generateResult(lang, validOutput());
+      await generateResult(lang, validOutput(), { outputLang: "English" });
       expect(mainText()).toContain(norm(t.green));
       expect((within(main()).getByRole("button", { name: c.exportPdf }) as HTMLButtonElement).disabled).toBe(false);
       expect((within(main()).getByRole("button", { name: c.exportMd }) as HTMLButtonElement).disabled).toBe(false);
@@ -440,7 +440,7 @@ for (const lang of LANGS) {
       const amber = factCheck(ORIGINAL_EN, out, { outputLang: "en" }).filter((f) => f.level === "amber");
       const line = amber.find((f) => f.value === AMBER_LINE);
       expect(line, "amber coverage finding").toBeTruthy();
-      await generateResult(lang, out);
+      await generateResult(lang, out, { outputLang: "English" });
       expect(mainText()).toContain(t.possibly);
       const el = finding((line as { id: string }).id) as HTMLElement;
       expect(el.textContent).toContain(AMBER_LINE);
@@ -449,7 +449,7 @@ for (const lang of LANGS) {
       expect(screen.getByTestId("resume-preview").textContent).toContain("risk-rule engine used by 3 product lines");
     });
     it("Original input summary, Edit input and regenerate, right column and A4 preview", async () => {
-      await generateResult(lang, validOutput());
+      await generateResult(lang, validOutput(), { outputLang: "English" });
       const text = mainText();
       expect(text).toMatch(new RegExp(String(ORIGINAL_EN.length).replace(/\B(?=(\d{3})+(?!\d))/g, ",?")));
       expect(text).toContain(t.tplName);
@@ -472,7 +472,7 @@ for (const lang of LANGS) {
     });
     it("Edit result opens the structured editor prefilled with the result (criterion 12)", async () => {
       const out = validOutput();
-      await generateResult(lang, out);
+      await generateResult(lang, out, { outputLang: "English" });
       expect(screen.queryByTestId("resume-editor")).toBeNull();
       click(within(main()).getByRole("button", { name: c.editResult }));
       await waitFor(() => expect(screen.getByTestId("resume-editor")).toBeTruthy());

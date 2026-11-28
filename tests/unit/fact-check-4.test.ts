@@ -277,7 +277,7 @@ describe("criterion 4: the two exploits give findings", () => {
   });
   it("(b) a bullet whose source is the whole original, with a number that appears elsewhere, gives a red number", () => {
     const out = faithful();
-    out.resume.experience[0]!.bullets = [{ text: "Led 12 projects in 2019.", source: ORIG }];
+    out.resume.experience[0]!.bullets = [{ text: "Led 12 projects.", source: ORIG }];
     const f = factCheck(ORIG, out);
     expect(of(f, "number", "red").map((x) => x.value).sort()).toEqual(["12"]);
     expect(of(f, "source", "amber").map((x) => x.where)).toContain("experience[0].bullets[0]");
