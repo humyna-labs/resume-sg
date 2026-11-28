@@ -113,7 +113,8 @@ for (const ui of ["en", "zh"] as const) {
 
   describe(`the exploits show findings and no green line, UI ${ui}`, () => {
     it("(a) an empty resume with notIncluded sources 'e' and 'i': amber cards, no green line of either kind", async () => {
-      const out: TailorOutput = { resume: emptySourced(), changes: [], notIncluded: [{ source: "e" }, { source: "i" }] };
+      // `order` must be a default section order: the AI reply check rejects any other (src/ai/tailor.ts checkOrder).
+      const out: TailorOutput = { resume: { ...emptySourced(), order: [...validOutput().resume.order] }, changes: [], notIncluded: [{ source: "e" }, { source: "i" }] };
       const findings = factCheck(ORIGINAL_EN, out, { outputLang: "en" });
       expect(findings.length).toBeGreaterThan(0);
       scriptedApi([() => apiOutput(out)]);
