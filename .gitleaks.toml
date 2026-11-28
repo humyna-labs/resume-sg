@@ -2,11 +2,13 @@
 # Uses all default rules, with one narrow exception: the generic-api-key rule matches the NEXT
 # dictionary key name (for example disclaimer.5.body) after a UI string that ends with the word
 # "key" (src/i18n/en.ts, "Your API key."). Dotted lowercase identifiers with three or more parts
-# are names, not secrets. Any change to this file needs the code owner's review.
+# are names, not secrets. Second exception (2026-11-28, PR #64): the app's own browser storage slot
+# names, such as jd2cv.apiKey in `const KEY_SLOT = "jd2cv.apiKey"`, are names, not secrets.
+# Any change to this file needs the code owner's review.
 [extend]
 useDefault = true
 
 [allowlist]
-description = "dotted lowercase identifiers such as i18n keys (generic-api-key false positive)"
+description = "dotted lowercase identifiers such as i18n keys, and jd2cv.* storage slot names (generic-api-key false positives)"
 regexTarget = "secret"
-regexes = ['''^[a-z][a-z0-9]*(\.[a-z0-9-]+){2,}$''']
+regexes = ['''^[a-z][a-z0-9]*(\.[a-z0-9-]+){2,}$''', '''^jd2cv\.[A-Za-z][A-Za-z0-9]*$''']
