@@ -465,11 +465,12 @@ export function TailorFlow() {
   }
 
   /** Clear all: this tab's session, and the page back to empty. The remembered key is asked about. */
-  function clearEverything() {
+  function clearEverything(includeKey = false) {
     ctl.current?.abort();
     ctl.current = null;
     busy.current = false;
-    clearAll({ includeKey: false });
+    clearAll({ includeKey });
+    if (includeKey) cfg.forgetKey();
     dispatch({ type: "reset", lang: uiLang });
     cfg.resetModel();
     setPhase("input");
@@ -483,7 +484,7 @@ export function TailorFlow() {
     setPutBack([]);
     setFit(null);
     setEditing(null);
-    setAskKey(isRemembered());
+    setAskKey(includeKey ? false : isRemembered());
   }
 
   function jump(s: Step) {
@@ -660,7 +661,7 @@ export function TailorFlow() {
           {row("jd", t("wz.sum.jd"), <><span className="wz-clip">{firstLine}</span> <span className="wz-len">({t("wz.sum.len").replace("{n}", fmt(jd.length))})</span></>, 2)}
           {row("options", t("wz.sum.options"), `${t(TPL_KEY[tpl])} · ${outLang === "zh" ? t("tpl.chinese") : t("tpl.english")} · ${t(MODE_KEY[mode])}`, 3)}
         </div>
-        <KeyArea cfg={cfg} />
+        <KeyArea cfg={cfg} onDeleteAll={() => clearEverything(true)} />
         {interrupted ? (
           <p className="fnote" role="status" data-testid="interrupted">
             {t("wz.interrupted")}
@@ -758,7 +759,7 @@ export function TailorFlow() {
       </section>
       <p className="fsmall fcenter" data-testid="autosave-note">
         {t("wz.autosave.note")}{" "}
-        <button type="button" className="btn btn-sm btn-ghost" onClick={clearEverything}>
+        <button type="button" className="btn btn-sm btn-ghost" onClick={() => clearEverything()}>
           {t("wz.clearAll")}
         </button>
       </p>
