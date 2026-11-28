@@ -55,8 +55,8 @@ describe("criterion 1 (a): sources occur in the original", () => {
     const original = "Built   the\tpayment\nAPI for   merchants\n\nShipped it";
     const { out } = bulletCase("Built the payment API", "Built the payment API");
     out.resume.experience = [];
-    out.resume.certificates = [{ text: "x", source: "Built the payment API" }];
-    out.notIncluded = [{ source: "  API for merchants  Shipped\nit " }];
+    out.resume.certificates = [{ text: "x", source: "Built the  payment" }]; // #52: inside one line, whole line
+    out.notIncluded = [{ source: "  API for   merchants " }]; // #52: inside one line, whole line
     expect(kinds(factCheck(original, out), "source")).toEqual([]);
   });
 
@@ -192,7 +192,7 @@ describe("criterion 3 (c): unsourced facts", () => {
   });
 
   it("a valid certificate gives no finding", () => {
-    const original = "Certificates: PMP (2020)";
+    const original = "PMP (2020)\nCertificates"; // #52: the source is the whole line (a 42% source would be weak)
     const resume = emptySourced();
     resume.certificates = [{ text: "PMP (2020)", source: "PMP (2020)" }];
     expect(red(factCheck(original, { resume, changes: [], notIncluded: [] }))).toEqual([]);
@@ -343,7 +343,7 @@ describe("criterion 4 (d): coverage", () => {
   });
 
   it("covers a line when the source contains it, or it contains the source", () => {
-    const f = cover("- Short line\n- A much longer original line with detail", ["Short line and more words", "longer original line"]);
+    const f = cover("- Short line\n- A much longer original line with detail", ["Short line and more words", "longer original line with detail"]);
     expect(kinds(f, "coverage")).toEqual([]);
   });
 
@@ -353,9 +353,19 @@ describe("criterion 4 (d): coverage", () => {
     expect(kinds(f, "coverage")).toEqual([]);
   });
 
-  it("a source spanning two lines covers both", () => {
+  // Changed by resume-sg#52: a bullet, certificate, extras or notIncluded source must lie inside one line to be strong.
+  it("a certificate source spanning two lines is weak: it covers neither line (resume-sg#52)", () => {
     const f = cover("First half of a\nsentence that wraps", ["First half of a sentence that wraps"]);
-    expect(kinds(f, "coverage")).toEqual([]);
+    expect(kinds(f, "coverage").map((x) => x.value)).toEqual(["First half of a", "sentence that wraps"]);
+  });
+
+  it("an entry source spanning two lines covers both (resume-sg#52)", () => {
+    const original = "Engineer, Acme, 2020 - 2021\nBuilt the billing service";
+    const resume = emptySourced();
+    resume.experience = [
+      { id: "e1", company: "Acme", title: "Engineer", location: "", start: "2020", end: "2021", source: original, bullets: [] },
+    ];
+    expect(kinds(factCheck(original, { resume, changes: [], notIncluded: [] }), "coverage")).toEqual([]);
   });
 
   it("ignores empty lines", () => {
@@ -528,7 +538,15 @@ describe("criterion 6: sample-cases fixtures (both languages)", () => {
         it(`mutation "${m.name}" gives exactly the expected finding`, () => {
           const out = s.build();
           m.apply(out);
-          const f = factCheck(s.original, out);
+          let f = factCheck(s.original, out);
+          if (m.expected.kind === "source") {
+            // resume-sg#52: numbers are checked only against a strong source, so a source that is not in the original
+            // may also leave red number findings at the same bullet; nothing else may appear.
+            const own = f.filter((x) => x.kind === "source");
+            expect(own).toHaveLength(1);
+            expect(f.filter((x) => x.kind !== "source").every((x) => x.kind === "number" && x.level === "red" && x.where === own[0]!.where)).toBe(true);
+            f = own;
+          }
           expect(f).toHaveLength(1);
           expect(f[0]).toMatchObject({ kind: m.expected.kind, level: m.expected.level });
           if (m.expected.where) expect(f[0]!.where).toBe(m.expected.where);

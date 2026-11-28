@@ -86,6 +86,7 @@ const KIND_KEY: Record<Finding["kind"], StrKey> = {
   basics: "flow.f.basics",
   item: "flow.f.item",
   coverage: "flow.f.coverage",
+  translated: "flow.translated",
 };
 
 function FindingRow({
@@ -103,13 +104,15 @@ function FindingRow({
   const red = f.level === "red";
   const addable = !red && f.kind === "coverage";
   const nameNote = !red && f.kind === "basics";
+  const translated = !red && f.kind === "translated";
+  const tooShort = !red && f.kind === "source";
   const elsewhere = !red && (f.kind === "date" || f.kind === "number");
-  const removable = red || elsewhere || f.kind === "item";
+  const removable = red || elsewhere || tooShort || f.kind === "item";
   const status: StrKey | null = decision === "removed" ? "flow.status.removed" : decision === "kept" ? "flow.status.kept" : decision === "added" ? "flow.status.added" : null;
   return (
     <div className={`ffind ${red ? "red" : "amber"}${status ? " done" : ""}`} data-finding-id={f.id}>
       <div className="fq">
-        {t(nameNote ? "flow.f.name" : elsewhere ? "flow.f.elsewhere" : KIND_KEY[f.kind])}
+        {translated ? null : t(nameNote ? "flow.f.name" : elsewhere ? "flow.f.elsewhere" : tooShort ? "flow.f.sourceShort" : KIND_KEY[f.kind])}
         <mark>{f.value}</mark>
       </div>
       <div className="fsmall">
@@ -132,7 +135,7 @@ function FindingRow({
             {t(red ? "flow.keep" : "flow.keepOk")}
           </button>
         </div>
-      ) : nameNote ? (
+      ) : nameNote || translated ? (
         <div className="facts">
           <button type="button" className="btn btn-sm btn-ghost" onClick={() => onDecide(f.id, "kept")}>
             {t("flow.keepOk")}
@@ -215,7 +218,10 @@ export function ResultView(p: ResultProps) {
   const resume = useMemo(() => toResume(p.shown), [p.shown]);
   const open = unresolvedCount(p.findings, p.decisions);
   const red = p.findings.filter((f) => f.level === "red");
-  const notFound = p.findings.filter((f) => f.level === "amber" && f.kind !== "coverage");
+  const translatedF = p.findings.filter((f) => f.level === "amber" && f.kind === "translated");
+  const notFound = p.findings.filter((f) => f.level === "amber" && f.kind !== "coverage" && f.kind !== "translated");
+  // Green only when nothing but the Translated lines (and, cross-language, the name note) is left to look at.
+  const allClear = open === 0 && p.findings.every((f) => f.level === "red" || f.kind === "translated" || (p.crossLang && f.kind === "basics"));
   const missing = p.findings.filter((f) => f.level === "amber" && f.kind === "coverage");
   const tabs: { id: TabId; label: StrKey; count: ReactNode; good: boolean }[] = [
     { id: "check", label: "flow.tab.check", count: open > 0 ? fill(t("flow.toReview"), open) : "✓", good: open === 0 },
@@ -258,7 +264,13 @@ export function ResultView(p: ResultProps) {
             {tab === "check" ? (
               <>
                 {red.map(row)}
-                {open === 0 ? <p className="fpassed">✓ {t("flow.green")}</p> : null}
+                {allClear ? <p className="fpassed">✓ {t(p.crossLang ? "flow.greenCross" : "flow.green")}</p> : null}
+                {translatedF.length > 0 ? (
+                  <section className="fgroup" data-testid="finding-group-translated">
+                    <h3 className="fsub">{t("flow.translated")}</h3>
+                    {translatedF.map(row)}
+                  </section>
+                ) : null}
                 {notFound.length > 0 ? (
                   <section className="fgroup" data-testid="finding-group-notfound">
                     <h3 className="fsub">{t("flow.notFound")}</h3>

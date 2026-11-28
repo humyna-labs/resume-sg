@@ -44,7 +44,8 @@ const T = {
     steps: ["Reading your original resume", "Rewriting against the job description", "Checking employers, titles, dates and numbers", "Fitting the template, within 1–2 pages"],
     cancelAsk: "Cancel? This request may already be charged, and you will not see its result.",
     unreadable: "The AI returned something we could not read. Your input is still here.",
-    green: "Employers, titles, dates, degrees and other numbers were all found in your original",
+    green: "All dates, numbers and sources were found in your original",
+    greenCross: "All dates and numbers were found in your original. Titles, degrees and names are in another language, so compare them with the original.",
     tabs: ["Check", "What changed", "Not in this version"],
     possibly: "Possibly missing",
     aiLabel: "AI-generated · check every line before you send it",
@@ -62,7 +63,8 @@ const T = {
     steps: ["读取原简历", "对照职位描述改写", "核对公司、职位、日期和数字", "排进模板，控制在 1–2 页"],
     cancelAsk: "确定取消？本次 AI 费用可能已经产生，取消后看不到这次的结果。",
     unreadable: "AI 返回的内容无法识别，你的输入都还在。",
-    green: "公司、职位、日期、学历和其他数字都能在原简历里找到",
+    green: "日期、数字和出处都能在原简历里找到",
+    greenCross: "日期和数字都能在原简历里找到。职位、学历和名称换了语言，请对照原文看一遍。",
     tabs: ["核对结果", "改动清单", "本版未放入"],
     possibly: "可能遗漏",
     aiLabel: "AI 生成 · 投递前请逐条核对",
@@ -376,7 +378,7 @@ for (const lang of LANGS) {
       const findings = factCheck(ORIGINAL_EN, out, { outputLang: "en" });
       const red = findings.filter((f) => f.level === "red");
       expect(red).toHaveLength(1);
-      await generateResult(lang, out);
+      await generateResult(lang, out, { outputLang: "English" });
       const tabs = within(main()).getAllByRole("tab");
       expect(tabs.map((x) => x.textContent ?? "")).toEqual(
         expect.arrayContaining([
@@ -416,7 +418,7 @@ for (const lang of LANGS) {
     it("Remove it deletes that text from the result and counts as handled", async () => {
       const out = redOutput();
       const red = factCheck(ORIGINAL_EN, out, { outputLang: "en" }).filter((f) => f.level === "red");
-      await generateResult(lang, out);
+      await generateResult(lang, out, { outputLang: "English" });
       expect(screen.getByTestId("resume-preview").textContent).toContain("30%");
       click(within(finding((red[0] as { id: string }).id) as HTMLElement).getByRole("button", { name: c.remove }));
       expect(screen.getByTestId("resume-preview").textContent).not.toContain("30%");
@@ -424,7 +426,7 @@ for (const lang of LANGS) {
       expect((within(main()).getByRole("button", { name: c.exportPdf }) as HTMLButtonElement).disabled).toBe(false); // #12
     });
     it("a faithful result: green line at once, no red item, both export buttons enabled and no hint (#12)", async () => {
-      await generateResult(lang, validOutput());
+      await generateResult(lang, validOutput(), { outputLang: "English" });
       expect(mainText()).toContain(norm(t.green));
       expect((within(main()).getByRole("button", { name: c.exportPdf }) as HTMLButtonElement).disabled).toBe(false);
       expect((within(main()).getByRole("button", { name: c.exportMd }) as HTMLButtonElement).disabled).toBe(false);
@@ -438,7 +440,7 @@ for (const lang of LANGS) {
       const amber = factCheck(ORIGINAL_EN, out, { outputLang: "en" }).filter((f) => f.level === "amber");
       const line = amber.find((f) => f.value === AMBER_LINE);
       expect(line, "amber coverage finding").toBeTruthy();
-      await generateResult(lang, out);
+      await generateResult(lang, out, { outputLang: "English" });
       expect(mainText()).toContain(t.possibly);
       const el = finding((line as { id: string }).id) as HTMLElement;
       expect(el.textContent).toContain(AMBER_LINE);
@@ -447,7 +449,7 @@ for (const lang of LANGS) {
       expect(screen.getByTestId("resume-preview").textContent).toContain("risk-rule engine used by 3 product lines");
     });
     it("Original input summary, Edit input and regenerate, right column and A4 preview", async () => {
-      await generateResult(lang, validOutput());
+      await generateResult(lang, validOutput(), { outputLang: "English" });
       const text = mainText();
       expect(text).toMatch(new RegExp(String(ORIGINAL_EN.length).replace(/\B(?=(\d{3})+(?!\d))/g, ",?")));
       expect(text).toContain(t.tplName);
@@ -470,7 +472,7 @@ for (const lang of LANGS) {
     });
     it("Edit result opens the structured editor prefilled with the result (criterion 12)", async () => {
       const out = validOutput();
-      await generateResult(lang, out);
+      await generateResult(lang, out, { outputLang: "English" });
       expect(screen.queryByTestId("resume-editor")).toBeNull();
       click(within(main()).getByRole("button", { name: c.editResult }));
       await waitFor(() => expect(screen.getByTestId("resume-editor")).toBeTruthy());
@@ -592,7 +594,7 @@ describe("criterion 13: dictionaries", () => {
         "Your current resume", "Job description", "Generate tailored resume", "Usually takes 1 to 3 minutes", "Try an example",
         "Cancel? This request may already be charged, and you will not see its result.", "Keep waiting",
         "The AI returned something we could not read. Your input is still here.",
-        "Employers, titles, dates, degrees and other numbers were all found in your original",
+        "All dates, numbers and sources were found in your original",
         "Possibly missing", "Original lines", "Edit input and regenerate", "Edit result", "Remove it",
         "Keep, my original left it out", "AI-generated · check every line before you send it", "Not in this version",
         "What changed",
@@ -601,7 +603,7 @@ describe("criterion 13: dictionaries", () => {
         "你的原始简历", "职位描述（JD）", "生成定制简历", "通常需要 1–3 分钟", "用示例试试",
         "确定取消？本次 AI 费用可能已经产生，取消后看不到这次的结果。", "继续等待",
         "AI 返回的内容无法识别，你的输入都还在。",
-        "公司、职位、日期、学历和其他数字都能在原简历里找到",
+        "日期、数字和出处都能在原简历里找到",
         "可能遗漏", "原文对照", "修改输入后重新生成", "编辑结果", "删掉这处",
         "我确认原简历遗漏了，保留", "AI 生成 · 投递前请逐条核对", "本版未放入", "改动清单", "核对结果",
         "对照职位描述改写", "核对公司、职位、日期和数字", "排进模板，控制在 1–2 页", "取消生成",

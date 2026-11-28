@@ -90,7 +90,10 @@ describe("criterion 2: zh original, en output: entry fields are not checked agai
     mutate(out);
     const f = factCheck(zhOriginal, out, en);
     expect(kind(f, "unsourced")).toEqual([]);
-    expect(f.map((x) => x.id).sort()).toEqual(base.map((x) => x.id).sort());
+    // Changed by resume-sg#52: a cross-language title or degree gets its own amber "translated" line, so a new
+    // title or degree is a new id there; every other finding is as in the baseline.
+    const rest = (x: Finding[]) => x.filter((y) => (y.kind as string) !== "translated").map((y) => y.id).sort();
+    expect(rest(f)).toEqual(rest(base));
   });
 
   it("a wrong entry source is still red source", () => {

@@ -159,7 +159,7 @@ for (const lang of LANGS) {
     });
     it("a finished result is saved with its decisions; localStorage and cookies stay empty", async () => {
       const out = redOutput();
-      await generateResult(lang, out);
+      await generateResult(lang, out, { outputLang: "English" });
       const id = findingId(out);
       fireEvent.click(within(card(id)).getByRole("button", { name: c.remove }));
       const raw = await saved((s) => {
@@ -236,7 +236,7 @@ for (const lang of LANGS) {
     });
     it("step 5 with a finished result shows the result with its decision (a removed red item stays removed)", async () => {
       const out = redOutput();
-      await generateResult(lang, out);
+      await generateResult(lang, out, { outputLang: "English" });
       const id = findingId(out);
       expect(exportEnabled(lang)).toBe(false);
       fireEvent.click(within(card(id)).getByRole("button", { name: c.remove }));
@@ -250,7 +250,7 @@ for (const lang of LANGS) {
     });
     it("a kept red item stays kept, an open one stays open", async () => {
       const out = redOutput();
-      await generateResult(lang, out);
+      await generateResult(lang, out, { outputLang: "English" });
       const id = findingId(out);
       // open: saved result without a decision
       const open = await saved((s) => !!s.result);

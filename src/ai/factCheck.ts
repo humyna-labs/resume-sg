@@ -171,6 +171,22 @@ export const LANGUAGE_NAMES: readonly (readonly string[])[] = [
 
 const stripProficiency = (s: string): string => normalise(s.replace(/\s*[(（][^)）]*[)）]/g, ""));
 
+// ---------------------------------------------------------------- strong sources (brief v8 section 1)
+type Strength = "missing" | "weak" | "strong";
+interface PLine {
+  idx: number;
+  text: string;
+}
+/** A line covered by a strong source: the characters the source holds of it, in tenths: len * 10 >= line * 6. */
+const coversLine = (part: number, line: number): boolean => part * 10 >= line * 6;
+const ENTRY_MIN = 12;
+const ENTRY_MIN_CJK = 6;
+const isMostlyCjk = (s: string): boolean => {
+  const han = (s.match(HAN_RE) ?? []).length;
+  const latin = (s.match(LATIN_RE) ?? []).length;
+  return han > 0 && han >= latin;
+};
+
 export const NAME_CHECK_TEXT = "请核对姓名拼写 / Check the name spelling";
 
 // ---------------------------------------------------------------- checker
@@ -190,9 +206,17 @@ export function factCheck(original: string, out: TailorOutput, opts?: { outputLa
   const cross = opts?.outputLang !== undefined && opts.outputLang !== src;
   const zhToEn = cross && src === "zh";
   const r = out.resume;
-  const goodSources: string[] = [];
   const badSources: string[] = [];
   const origLines = original.split(/\r?\n/);
+  const plines: PLine[] = [];
+  origLines.forEach((raw, idx) => {
+    if (!/[\p{L}\p{N}]/u.test(raw)) return;
+    const text = plainLine(raw);
+    if (text !== "") plines.push({ idx, text });
+  });
+  /** Positions (in plines) of original lines covered by a strong source. */
+  const covered = new Set<number>();
+  const heads = (fields: string[]): string[] => fields.map((f) => normalise(f).toLowerCase()).filter((f) => f !== "");
   const origDates = sourceDates(original);
   const origNumbers = new Set(extractNumbers(original).map((n) => n.value));
 
@@ -207,16 +231,58 @@ export function factCheck(original: string, out: TailorOutput, opts?: { outputLa
     return `${source}\n${origLines.slice(Math.max(0, first - 1), last + 4).join("\n")}`;
   };
 
-  /** (a): returns whether the source occurs in the original. */
-  const checkSource = (where: string, source: string): boolean => {
+  /**
+   * (a): "missing" when the source is not in the original (red); "weak" when it is in the original but not strong
+   * (amber, "source too short to check"); "strong" otherwise. A strong source covers the original lines it holds.
+   * `entry` is given for an experience, project or education source: a run of consecutive lines with one of its heads.
+   */
+  const checkSource = (where: string, source: string, entry?: string[]): Strength => {
     const s = normalise(source);
-    const ok = s !== "" && norm.includes(s);
-    if (ok) goodSources.push(s);
-    else {
+    const srcLines = source.split(/\r?\n/).map(plainLine).filter((l) => l !== "");
+    const inLines = srcLines.length > 0 && srcLines.every((l) => plines.some((p) => p.text.includes(l)));
+    if (s === "" || (!norm.includes(s) && !(entry !== undefined && inLines))) {
       add("red", "source", where, source);
       if (s !== "") badSources.push(s);
+      return "missing";
     }
-    return ok;
+    const weak = (): Strength => {
+      add("amber", "source", where, source);
+      return "weak";
+    };
+    const k = srcLines.length;
+    if (entry === undefined) {
+      if (k !== 1) return weak();
+      const sp = srcLines[0] ?? "";
+      let best = -1;
+      plines.forEach((p, i) => {
+        if (p.text.includes(sp) && (best < 0 || p.text.length < (plines[best]?.text.length ?? 0))) best = i;
+      });
+      if (best < 0 || !coversLine(sp.length, plines[best]?.text.length ?? 1)) return weak();
+      covered.add(best);
+      return "strong";
+    }
+    const total = srcLines.join(" ");
+    if (total.length < (isMostlyCjk(total) ? ENTRY_MIN_CJK : ENTRY_MIN)) return weak();
+    for (let i = 0; i + k <= plines.length; i++) {
+      let ok = true;
+      for (let j = 0; j < k && ok; j++) {
+        const pl = plines[i + j];
+        const sl = srcLines[j] ?? "";
+        if (!pl) ok = false;
+        else ok = j === 0 || j === k - 1 ? pl.text.includes(sl) : pl.text === sl;
+      }
+      if (!ok) continue;
+      if (!cross && entry.length > 0) {
+        const run = plines.slice(i, i + k).map((p) => p.text.toLowerCase());
+        if (!entry.some((h) => run.some((t) => t.includes(h)))) continue;
+      }
+      srcLines.forEach((sl, j) => {
+        const len = plines[i + j]?.text.length ?? 1;
+        if (sl.length >= len || coversLine(sl.length, len)) covered.add(i + j);
+      });
+      return "strong";
+    }
+    return weak();
   };
 
   /** (c): each fact must occur in the entry's source, which must itself have passed (a). */
@@ -266,8 +332,9 @@ export function factCheck(original: string, out: TailorOutput, opts?: { outputLa
   const checkBullets = (where: string, bullets: SourcedText[], entryScope: string): void => {
     bullets.forEach((b, i) => {
       const w = `${where}.bullets[${i}]`;
-      checkSource(w, b.source);
-      checkNumbers(w, b.text, `${scopeOf(b.source)}\n${entryScope}`);
+      const st = checkSource(w, b.source);
+      if (st === "strong") checkNumbers(w, b.text, `${scopeOf(b.source)}\n${entryScope}`);
+      else for (const n of extractNumbers(b.text)) add("red", "number", w, n.raw.trim());
     });
   };
 
@@ -275,15 +342,16 @@ export function factCheck(original: string, out: TailorOutput, opts?: { outputLa
   r.experience.forEach((e) => expScope.set(e.id, scopeOf(e.source)));
   r.experience.forEach((e, i) => {
     const w = `experience[${i}]`;
-    const ok = checkSource(w, e.source);
+    const ok = checkSource(w, e.source, heads([e.company, e.title])) !== "missing";
     checkFacts(w, ok, e.source, [["company", e.company], ["title", e.title]]);
+    if (cross && normalise(e.title) !== "") add("amber", "translated", `${w}.title`, e.title);
     const scope = expScope.get(e.id) ?? e.source;
     checkDates(w, ok, scope, [["start", e.start], ["end", e.end]]);
     checkBullets(w, e.bullets, scope);
   });
   r.projects.forEach((p, i) => {
     const w = `projects[${i}]`;
-    const ok = checkSource(w, p.source);
+    const ok = checkSource(w, p.source, heads([p.name])) !== "missing";
     checkFacts(w, ok, p.source, [["name", p.name]]);
     const parent = p.experienceId === undefined ? undefined : expScope.get(p.experienceId);
     const scope = `${scopeOf(p.source)}${parent === undefined ? "" : `\n${parent}`}`;
@@ -292,19 +360,20 @@ export function factCheck(original: string, out: TailorOutput, opts?: { outputLa
   });
   r.education.forEach((e, i) => {
     const w = `education[${i}]`;
-    const ok = checkSource(w, e.source);
+    const ok = checkSource(w, e.source, heads([e.school, e.degree])) !== "missing";
     checkFacts(w, ok, e.source, [["school", e.school], ["degree", e.degree]]);
+    if (cross && normalise(e.degree) !== "") add("amber", "translated", `${w}.degree`, e.degree);
     checkDates(w, ok, scopeOf(e.source), [["start", e.start], ["end", e.end]]);
   });
   r.certificates.forEach((c, i) => {
     const w = `certificates[${i}]`;
-    const ok = checkSource(w, c.source);
+    const ok = checkSource(w, c.source) !== "missing";
     checkFacts(w, ok, c.source, [["", c.text]]);
   });
   r.extras.forEach((x, i) =>
     x.items.forEach((item, j) => {
       const w = `extras[${i}].items[${j}]`;
-      const ok = checkSource(w, item.source);
+      const ok = checkSource(w, item.source) !== "missing";
       checkFacts(w, ok, item.source, [["", item.text]]);
     }),
   );
@@ -354,10 +423,11 @@ export function factCheck(original: string, out: TailorOutput, opts?: { outputLa
   checkNumbers("summary", r.summary, original);
 
   // (d) coverage.
-  const goodPlain = goodSources.map(plainText).filter((s) => s !== "");
   const badPlain = badSources.map(plainText).filter((s) => s !== "");
+  const posOf = new Map(plines.map((p, i) => [p.idx, i]));
   origLines.forEach((rawLine, i) => {
     if (!/[\p{L}\p{N}]/u.test(rawLine)) return; // ---, ***, |---|: no letter, digit or CJK character
+    if (covered.has(posOf.get(i) ?? -1)) return;
     const line = plainLine(rawLine);
     if (line === "") return;
     if (HEADINGS.has(line.replace(/\s*[:：]$/, "").toLowerCase())) return;
@@ -365,7 +435,6 @@ export function factCheck(original: string, out: TailorOutput, opts?: { outputLa
     if (name !== "" && ll.includes(name)) return;
     if (email !== "" && ll.includes(email)) return;
     if (phoneDigits !== "" && digitsOf(line).includes(phoneDigits)) return;
-    if (goodPlain.some((s) => line.includes(s) || s.includes(line))) return;
     if (badPlain.some((s) => line.includes(s) || s.includes(line))) return;
     // A source that failed (a) is already red; it still stands for the line it tried to cite.
     if (badPlain.some((s) => dice(s, line) >= 0.6)) return;

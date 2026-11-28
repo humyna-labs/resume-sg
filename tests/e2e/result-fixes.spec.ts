@@ -79,6 +79,10 @@ test("criterion 4: the two groups are shown with their headings and actions", as
   await expect(nf.getByRole("button", { name: "Remove it" })).toHaveCount(1);
   await expect(nf.getByRole("button", { name: "Keep", exact: true })).toHaveCount(2); // the item card and the name card
   await expect(miss.getByTestId("finding-add")).toHaveCount(1);
+  // Changed by resume-sg#52: a zh -> en run has a third group, the translated titles and degree (2 titles, 1 degree).
+  const tr = page.getByTestId("finding-group-translated");
+  await expect(tr.getByRole("heading", { name: "Translated: compare with your original" })).toBeVisible();
+  await expect(tr.locator("[data-finding-id]")).toHaveCount(3);
   await page.screenshot({ path: "test-results/result-fixes-groups.png", fullPage: true });
 });
 

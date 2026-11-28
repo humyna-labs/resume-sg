@@ -172,10 +172,20 @@ export function resetStores() {
 }
 
 /** Render the Start route with a key, fill both texts and walk to step 4 (or `stopAt`), ready to click Generate. */
-export function startFlow(lang: L, opts: { original?: string; jd?: string; key?: string | null; stopAt?: 1 | 2 | 3 | 4 } = {}) {
+export function startFlow(
+  lang: L,
+  opts: { original?: string; jd?: string; key?: string | null; stopAt?: 1 | 2 | 3 | 4; outputLang?: "English" | "中文" } = {},
+) {
   if (opts.key !== null) withKey(opts.key ?? FAKE_KEY);
   const view = renderApp(lang);
-  walkTo(lang, opts.stopAt ?? 4, opts.original ?? ORIGINAL_EN, opts.jd ?? JD_EN);
+  const stopAt = opts.stopAt ?? 4;
+  if (opts.outputLang && stopAt >= 3) {
+    // resume-sg#52: the output language defaults to the UI language, so a same-language run with an English original
+    // under the zh UI must pick English on step 3 first.
+    walkTo(lang, 3, opts.original ?? ORIGINAL_EN, opts.jd ?? JD_EN);
+    activate(control(opts.outputLang));
+    if (stopAt === 4) goNext();
+  } else walkTo(lang, stopAt, opts.original ?? ORIGINAL_EN, opts.jd ?? JD_EN);
   return view;
 }
 
