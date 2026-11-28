@@ -98,7 +98,8 @@ for (const lang of LANGS) {
     it("Confirm clears a key that was never remembered (memory only)", async () => {
       setKey(FAKE_KEY, false);
       startFlow(lang, { key: null, stopAt: 4 });
-      fireEvent.click(within(main()).getByRole("button", { name: TXT[lang].change })); // compact row to the full panel
+      // compact key row to the full panel; scoped to the key row, the summary rows have Change buttons too
+      fireEvent.click(within(screen.getByTestId("key-row")).getByRole("button", { name: TXT[lang].change }));
       open(lang);
       confirm();
       expect(getKey()).toBe("");
