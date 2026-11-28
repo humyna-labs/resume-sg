@@ -66,9 +66,23 @@ describe("criterion 7 (store): the analysis is part of the saved result", () => 
   corrupt("a negative dropped count", (e) => void (e.result.match.dropped = -1));
   corrupt("an extra key in the output", (e) => void (e.result.match.output.score = 90));
   corrupt("an unknown status", (e) => void (e.result.match.output.requirements[0].status = "great"));
-  corrupt("2 strengths", (e) => void (e.result.match.output.strengths.length = 2));
+  corrupt("6 strengths", (e) => void e.result.match.output.strengths.push(...clone(e.result.match.output.strengths), ...clone(e.result.match.output.strengths)));
   corrupt("4 interview questions", (e) => void e.result.match.output.interviewQuestions.pop());
   corrupt("a wrong type: gaps is an object", (e) => void (e.result.match.output.gaps = {}));
+  // checkMatch drops items that fail the quote check, so the saved (kept) analysis may hold fewer than 3 strengths.
+  // Rejecting it would delete the whole session; the 3-to-5 rule belongs to parseMatchOutput only.
+  for (const n of [0, 1, 2]) {
+    it(`an analysis kept with ${n} strengths after the code checks is accepted and restored`, () => {
+      const e = clone(entry());
+      e.result.match.output.strengths.length = n;
+      saveSession(e as never);
+      expect(sessionStorage.getItem(SLOT)).not.toBeNull();
+      const back = loadSession() as unknown as Raw;
+      expect(back).not.toBeNull();
+      expect(back.result.match.output.strengths).toHaveLength(n);
+      expect(back.result.output).toEqual(validOutput());
+    });
+  }
   it("clearSession still removes the entry with its analysis", () => {
     saveSession(entry() as never);
     clearSession();
