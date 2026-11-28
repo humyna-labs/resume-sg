@@ -385,7 +385,9 @@ for (const lang of LANGS) {
           expect.stringContaining(t.tabs[2] as string),
         ]),
       );
-      const tab = (i: number) => tabs.find((x) => (x.textContent ?? "").includes(t.tabs[i] as string)) as HTMLElement;
+      expect(tabs).toHaveLength(4); // #48: the fourth tab is the match analysis
+      expect(tabs[3]?.textContent).toMatch(lang === "en" ? /Match analysis/ : /匹配分析/);
+      const tab =(i: number) => tabs.find((x) => (x.textContent ?? "").includes(t.tabs[i] as string)) as HTMLElement;
       expect(tab(0).textContent).toContain("1");
       expect(tab(1).textContent).toContain(String(out.changes.length));
       // page-fit (#11) may move more bullets into "Not in this version": the count is at least the AI's own

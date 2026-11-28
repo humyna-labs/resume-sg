@@ -11,6 +11,8 @@ import { PAGE_H } from "../../layout/pageFit.ts";
 import { ExportButtons } from "../../export/ExportButtons.tsx";
 import { TemplateView } from "../templates/TemplateView.tsx";
 import { toResume } from "./apply.ts";
+import { MatchPanel } from "./MatchPanel.tsx";
+import type { MatchPanelProps } from "./MatchPanel.tsx";
 import type { OutputLang, TailorMode } from "../../ai/tailor.ts";
 
 export interface ResultSnapshot {
@@ -21,7 +23,7 @@ export interface ResultSnapshot {
   modelName: string;
 }
 
-type TabId = "check" | "changes" | "notIncluded";
+type TabId = "check" | "changes" | "notIncluded" | "match";
 type T = (key: StrKey) => string;
 
 const fill = (s: string, n: number): string => s.replace("{n}", String(n));
@@ -202,6 +204,7 @@ export interface ResultProps {
   /** Still over two pages after nothing more could move. */
   over: boolean;
   onPutBack: (source: string) => void;
+  match: MatchPanelProps;
 }
 
 export function ResultView(p: ResultProps) {
@@ -218,6 +221,7 @@ export function ResultView(p: ResultProps) {
     { id: "check", label: "flow.tab.check", count: open > 0 ? fill(t("flow.toReview"), open) : "✓", good: open === 0 },
     { id: "changes", label: "flow.tab.changes", count: p.output.changes.length, good: true },
     { id: "notIncluded", label: "flow.tab.notIncluded", count: p.shown.notIncluded.length, good: true },
+    { id: "match", label: "flow.tab.match", count: null, good: true },
   ];
   const row = (f: Finding) => <FindingRow key={f.id} f={f} decision={p.decisions[f.id]} out={p.output} onDecide={p.onDecide} />;
   const modelLine = [
@@ -246,7 +250,7 @@ export function ResultView(p: ResultProps) {
                 onClick={() => setTab(x.id)}
               >
                 {t(x.label)}
-                <span className={`fcnt ${x.good ? "g" : "r"}`}>{x.count}</span>
+                {x.count === null ? null : <span className={`fcnt ${x.good ? "g" : "r"}`}>{x.count}</span>}
               </button>
             ))}
           </div>
@@ -284,6 +288,8 @@ export function ResultView(p: ResultProps) {
                   ))}
                 </ul>
               )
+            ) : tab === "match" ? (
+              <MatchPanel {...p.match} />
             ) : p.shown.notIncluded.length === 0 ? (
               <p className="fsmall">{t("flow.noneLeft")}</p>
             ) : (

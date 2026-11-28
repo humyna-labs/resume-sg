@@ -2,7 +2,8 @@
 // which belongs to this tab only and is gone when the tab closes. Never localStorage, cookies or IndexedDB.
 // The API key is never stored here: saveSession throws if any string value equals the current key.
 import type { OutputLang, TailorMode } from "../ai/tailor.ts";
-import type { Decision, TailorOutput } from "../ai/types.ts";
+import { matchProblems } from "../ai/match.ts";
+import type { Decision, MatchOutput, TailorOutput } from "../ai/types.ts";
 import { clearKey, getKey } from "../security/keyStore.ts";
 
 export const SESSION_SLOT = "jd2cv.session";
@@ -14,6 +15,8 @@ export interface SessionResult {
   output: TailorOutput;
   decisions: Record<string, Decision>;
   generatedAt: number;
+  /** The match analysis (resume-sg#48): the checked output and how many items the code check removed. */
+  match?: { output: MatchOutput; dropped: number };
   /** What the result was generated from, so that its checks still match after the inputs were edited. */
   base?: { original: string; jd: string; lang: OutputLang; mode: TailorMode; model: string };
 }
@@ -49,6 +52,11 @@ function validResult(r: unknown): boolean {
   if (!isObj(r)) return false;
   if (!validOutput(r.output) || !isObj(r.decisions) || typeof r.generatedAt !== "number") return false;
   if (!Object.values(r.decisions).every((d) => d === "removed" || d === "kept" || d === "added")) return false;
+  if (r.match !== undefined) {
+    const m = r.match;
+    if (!isObj(m) || Object.keys(m).some((k) => k !== "output" && k !== "dropped")) return false;
+    if (typeof m.dropped !== "number" || !Number.isInteger(m.dropped) || m.dropped < 0 || matchProblems(m.output, { checked: true }).length > 0) return false;
+  }
   if (r.base === undefined) return true;
   const b = r.base;
   return isObj(b) && isStr(b.original) && isStr(b.jd) && (b.lang === "en" || b.lang === "zh") && MODES.includes(b.mode as string) && isStr(b.model);

@@ -68,3 +68,36 @@ export interface Finding {
 }
 /** red: removed | kept; amber: added */
 export type Decision = "removed" | "kept" | "added";
+
+// Match analysis (resume-sg#48): one separate AI call, every quote checked by code.
+export type MatchStatus = "evidence" | "partial" | "missing";
+export interface MatchRequirement {
+  /** Copied from the job description. */
+  jdQuote: string;
+  status: MatchStatus;
+  /** Copied from the original resume. Absent when the status is missing. */
+  evidenceQuote?: string;
+  note: string;
+}
+export interface MatchStrength {
+  jdQuote: string;
+  status: "evidence";
+  evidenceQuote: string;
+  note: string;
+  howToTell: string;
+}
+export interface MatchGap {
+  jdQuote: string;
+  howToAddress: string;
+}
+export interface MatchQuestion {
+  question: string;
+  starPoints: string[];
+}
+export interface MatchOutput {
+  requirements: MatchRequirement[];
+  strengths: MatchStrength[];
+  gaps: MatchGap[];
+  interviewQuestions: MatchQuestion[];
+  questionsToAsk: string[];
+}
