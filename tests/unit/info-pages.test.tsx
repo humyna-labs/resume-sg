@@ -5,7 +5,7 @@ import { App } from "../../src/App.tsx";
 import * as enMod from "../../src/i18n/en.ts";
 import * as zhMod from "../../src/i18n/zh.ts";
 import { leafValues, shape } from "./dict-helpers.ts";
-import { FAQ, STEPS } from "./info-pages-fixtures.ts";
+import { FAQ, SESSION_EN, SESSION_ZH, STEPS } from "./info-pages-fixtures.ts";
 
 type Dict = Record<string, string>;
 const pick = (m: Record<string, unknown>, name: string): Dict => (m.default ?? m[name]) as Dict;
@@ -199,6 +199,7 @@ describe("criterion 6: Privacy", () => {
       "When you use an AI action, your resume and the job description are sent from your browser to Anthropic with your API key,",
       "Hosting: Cloudflare Pages serves the site's files.",
       "Contact:",
+      SESSION_EN,
     ],
     zh: [
       "我们没有服务器、没有数据库、没有账号系统、没有统计工具、没有广告，也不设置任何 Cookie。",
@@ -206,6 +207,7 @@ describe("criterion 6: Privacy", () => {
       "当你使用 AI 功能时，你的简历和职位描述会连同你的 API key 一起从你的浏览器发送给 Anthropic，适用 Anthropic 的",
       "托管：网站文件由 Cloudflare Pages 提供。",
       "联系方式：",
+      SESSION_ZH,
     ],
   };
   for (const lang of ["en", "zh"] as const) {
@@ -221,6 +223,18 @@ describe("criterion 6: Privacy", () => {
       expect(main().querySelector('a[href="#/contact"]')).not.toBeNull();
     });
   }
+});
+
+describe("resume-sg#31 criterion 7: the session sentence", () => {
+  it("the FAQ answer ends with it and a Privacy text ends with it, in both dictionaries", () => {
+    const store = FAQ.find((x) => x.enQ === "Do you store my resume?");
+    for (const [d, s, a] of [[en, SESSION_EN, store?.enA], [zh, SESSION_ZH, store?.zhA]] as const) {
+      expect(norm(a ?? "").endsWith(norm(s))).toBe(true);
+      const vals = leafValues(d).map(norm);
+      expect(vals.some((v) => v.endsWith(norm(s)) && v.length > norm(s).length), "a Privacy text ends with it").toBe(true);
+      expect(vals.filter((v) => v.includes(norm(s))).length).toBeGreaterThanOrEqual(2);
+    }
+  });
 });
 
 describe("criterion 7: dictionaries", () => {

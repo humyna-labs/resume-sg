@@ -1,6 +1,10 @@
 // Fixtures copied from issue resume-sg#5 (brief v4 appendices A and B). Synthetic, no personal data.
 export interface Qa { zhQ: string; zhA: string; enQ: string; enA: string }
 
+// resume-sg#31 criterion 7: the one sentence added to the Privacy page and to the FAQ answer "Do you store my resume?".
+export const SESSION_ZH = "为了防止刷新丢失，你的输入和结果会临时保存在当前标签页里，关闭标签页即清除，也可以随时点\"清除全部\"。";
+export const SESSION_EN = "So that a refresh loses nothing, your input and result are kept temporarily in this browser tab; closing the tab clears them, and Clear all removes them at any time.";
+
 export const FAQ: Qa[] = [
   { zhQ: "JD2CV 真的免费吗？", enQ: "Is JD2CV really free?",
     zhA: "是。没有付费功能、没有广告、无需注册。AI 生成使用你自己的 Anthropic API key，费用由 Anthropic 按你的实际用量收取，我们不收任何钱。",
@@ -18,8 +22,8 @@ export const FAQ: Qa[] = [
     zhA: "默认只保存在当前页面的内存里，关闭页面就消失。只有你勾选\"在这台设备上记住\"时，才会保存在这个浏览器里。key 只发送给 Anthropic，网站不加载任何第三方脚本。",
     enA: "By default it lives only in this page's memory and is gone when you close the page. It is kept in this browser only if you tick \"Remember on this device\". It is sent only to Anthropic, and the site loads no third-party scripts." },
   { zhQ: "你们会存储我的简历吗？", enQ: "Do you store my resume?",
-    zhA: "不会。我们没有服务器，也没有数据库。你点 AI 生成时，简历和职位描述会发给 Anthropic 处理，适用 Anthropic 的隐私政策。只有你选择\"在这个浏览器里保存草稿\"时，草稿才会保存在你自己的浏览器里。",
-    enA: "No. We have no server and no database. When you click an AI action, your resume and the job description are sent to Anthropic, under Anthropic's privacy policy. Your draft is kept in your own browser only if you choose to save it." },
+    zhA: "不会。我们没有服务器，也没有数据库。你点 AI 生成时，简历和职位描述会发给 Anthropic 处理，适用 Anthropic 的隐私政策。只有你选择\"在这个浏览器里保存草稿\"时，草稿才会保存在你自己的浏览器里。" + SESSION_ZH,
+    enA: "No. We have no server and no database. When you click an AI action, your resume and the job description are sent to Anthropic, under Anthropic's privacy policy. Your draft is kept in your own browser only if you choose to save it. " + SESSION_EN },
   { zhQ: "AI 会编造经历吗？", enQ: "Will the AI make things up?",
     zhA: "我们要求 AI 只改写、调整顺序、合并和翻译你写过的内容，不能新增公司、职位、日期、学历、证书、数字或技能。生成之后，程序还会把这些信息与你的原始简历逐项核对：原简历里没有的内容会标红，处理之前不能导出。",
     enA: "We instruct the AI to only rephrase, reorder, merge and translate what you wrote, and never to add employers, titles, dates, degrees, certificates, numbers or skills. After generation, the app also checks these against your original resume item by item. Anything not in your original is highlighted in red, and you cannot export until you deal with it." },

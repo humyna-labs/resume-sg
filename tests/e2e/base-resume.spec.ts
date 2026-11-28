@@ -10,7 +10,7 @@ const nameField = (page: Page) => page.getByTestId("resume-editor").getByLabel(/
 test.describe("base resume e2e", () => {
   test.use({ locale: "en-US" });
 
-  test("criterion 8: memory only, a reload starts empty, no cross-origin request", async ({ page, baseURL }) => {
+  test("criterion 8: no localStorage, cookie or IndexedDB, a reload restores this tab's session, no cross-origin request", async ({ page, baseURL }) => {
     const origin = new URL(baseURL ?? "http://127.0.0.1:4173").origin;
     const urls: string[] = [];
     page.on("request", (q) => urls.push(q.url()));
@@ -34,9 +34,11 @@ test.describe("base resume e2e", () => {
       expect(new URL(u).origin, u).toBe(origin);
     }
 
+    // resume-sg#31: this tab's session is restored instead of an empty page (the editor itself is not saved)
     await page.reload();
     await expect(page.getByTestId("resume-editor")).toHaveCount(0);
-    await expect(page.getByTestId("resume-preview")).toHaveCount(0); // resume-sg#41: no empty preview card beside the wizard
+    await expect(page.getByTestId("tailor-result")).toBeVisible();
+    await expect(page.getByTestId("resume-preview")).toBeVisible();
   });
 
   test("criterion 9: keyboard reaches every control, each has a name", async ({ page }) => {
