@@ -172,7 +172,7 @@ export function case1Output(): TailorOutput {
       { source: "Maintained the team's wiki and onboarding pages." },
       { source: "Wrote internal tools for log search." },
       { source: "Supported the release of a mobile banking feature." },
-      { source: "React" },
+      { source: "Skills: Java, Kotlin, SQL, Spring Boot, Kafka, gRPC, AWS, Docker, Kubernetes, React" }, // a whole line: a one-word source is weak (#52)
       { source: "Languages: English, Mandarin" },
     ],
   };
@@ -289,7 +289,7 @@ export function case2Output(): TailorOutput {
       { source: "负责公司公众号日常更新。" },
       { source: case2Annual },
       { source: "整理用户反馈，每月输出反馈报告。" },
-      { source: "剪映" },
+      { source: "技能：SQL、Excel、A/B 测试、数据看板、Figma、剪映" }, // a whole line (#52)
       { source: "语言：英语（工作语言）、普通话（母语）" },
     ],
   };

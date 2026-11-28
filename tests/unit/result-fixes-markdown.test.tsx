@@ -41,11 +41,14 @@ describe("criterion 9: zh -> zh, a faithful output gives no finding at all", () 
   it("no coverage card for ---", () => expect(f.filter((x) => x.kind === "coverage")).toEqual([]));
 });
 
-describe("criterion 9: zh -> en, a faithful output gives no red; the only amber is the translated name", () => {
+describe("criterion 9: zh -> en, a faithful output gives no red; the ambers are the translated name, titles and degree", () => {
   const f = factCheck(mdOriginal, mdEnOutput(), { outputLang: "en" });
   it("no red finding", () => expect(level(f, "red")).toEqual([]));
-  it("ambers are of the expected kinds only: one basics (the name)", () => {
-    expect(level(f, "amber").map((x) => [x.kind, x.where])).toEqual([["basics", "basics.name"]]);
+  // Changed by resume-sg#52: a cross-language run also lists every experience title and education degree (kind "translated").
+  it("ambers are of the expected kinds only: the name (basics) and one translated line per title and degree", () => {
+    expect(level(f, "amber").map((x) => [x.kind, x.where]).sort()).toEqual(
+      [["basics", "basics.name"], ["translated", "education[0].degree"], ["translated", "experience[0].title"], ["translated", "experience[1].title"]].sort(),
+    );
   });
   it("no coverage card at all, so none for ---", () => {
     expect(f.filter((x) => x.kind === "coverage")).toEqual([]);

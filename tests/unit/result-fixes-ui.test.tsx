@@ -192,7 +192,7 @@ for (const ui of ["en", "zh"] as const) {
       for (const b of exportBtns()) expect(b.disabled).toBe(true);
       expect(toolbar()).not.toContain(t.hint);
       fireEvent.click(within(card(red.id)).getByRole("button", { name: TXT[ui].keep }));
-      await waitFor(() => expect(mainText()).toContain(norm(ui === "en" ? "Employers, titles, dates, degrees and other numbers were all found in your original" : "公司、职位、日期、学历和其他数字都能在原简历里找到")));
+      await waitFor(() => expect(mainText()).toContain(norm(ui === "en" ? "All dates, numbers and sources were found in your original" : "日期、数字和出处都能在原简历里找到")));
       for (const b of exportBtns()) expect(b.disabled).toBe(false);
       expect(toolbar()).not.toContain(t.hint);
     });
