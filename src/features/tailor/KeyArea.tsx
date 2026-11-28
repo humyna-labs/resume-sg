@@ -10,13 +10,13 @@ const mask = (key: string): string => `${key.startsWith("sk-ant-") ? "sk-ant-" :
  * Part of step 4, inside its card. With a key that is not remembered on this device: a compact row (masked key,
  * state, Change) and the model. Without a key, or with a remembered one: the full AI settings panel with the 3-step help.
  */
-export function KeyArea({ cfg }: { cfg: AiConfig }) {
+export function KeyArea({ cfg, onDeleteAll }: { cfg: AiConfig; onDeleteAll?: () => void }) {
   const t = useT();
   const [compact, setCompact] = useState(() => cfg.key !== "" && !cfg.remember);
   if (!compact) {
     return (
       <div data-testid="key-row">
-        <AiSettings cfg={cfg} bare />
+        <AiSettings cfg={cfg} bare onDeleteAll={onDeleteAll} />
       </div>
     );
   }
